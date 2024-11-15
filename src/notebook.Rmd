@@ -1,19 +1,22 @@
 ---
 title: "R Notebook"
+output:
+  html_notebook: default
+  pdf_document: default
+---
+
+---
+title: "R Notebook"
 output: html_notebook
 ---
 
-```{r}
+ <font size="5"> Conjunto de datos de diágnostico de cáncer de mama en Wisconsin </font> 
+ 
 
-# install.packages("dplyr")
-# install.packages("ggplot2")
-# install.packages("tidyverse")
+<fotn size="3">1.1 Importación y Carga de Datos </font> 
 
-library(dplyr)
-library(ggplot2)
-library(tidyverse)
+Para comenzar nuestro análisis es necesario realizar la carga de los datos:
 
-```
 
 ```{r}
 
@@ -22,3 +25,276 @@ data <- read.csv("data/data.csv")
 data
 
 ```
+
+Instalamos los paquetes que serán necesarios durante nuestro proyecto:
+
++ Tidyverse: Para la manipulación de datos y gráficos.
++ Caret: Para el preprocesamiento y modelado
+  Lattice es requerido por Caret
++ DataExplorer: Para la exploración automatizada de los datos.
++ Dplyr: Proporciona una gramática de manipulación de datos.
++ Ggplot2: Personalización de gráficas.
++ Psych: Para análisis estadístico
++ Corrplot: Visualización de matriz de correlación.
+
+```{r}
+
+#install.packages("tidyverse")
+#install.packages("caret")
+#install.packages("DataExplorer")
+#install.packages("dplyr")
+#install.packages("ggplot2")
+#install.packages("lattice")
+#install.packages("psych")
+#install.packages("corrplot")
+#install.packages("ggcorrplot")
+
+library(caret)
+library(DataExplorer)
+library()
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+library(lattice)
+library(psych)
+library(corrplot)
+library(ggcorrplot)
+
+
+
+
+```
+
+
+Hagamos una vista inicial de los datos:
+```{r}
+#primeras filas de nuestro dataset:
+
+head(data)
+```
+```{r}
+# Dimensión de nuestro dataset:
+
+dim(data)
+```
+Nuestro dataset cuenta con 33 columnas y 569 filas.
+
+```{r}
+# Con str mostramos la estructura de nuestro dataframe, incluyendo los tipos de nuestras variables:
+
+str(data)
+```
+```{r}
+
+# Con Describe podemos ver un primer resumen estadístico básico:
+
+describe(data)
+
+```
+
+```{r}
+# Tipos de datos en nuestras variables:
+
+sapply(data, class)
+```
+```{r}
+# Veamos si existen valores faltantes en nuestros datos:
+
+anyNA(data)
+```
+```{r}
+#Contamos el numero de valores faltantes por columna:
+
+colSums(is.na(data))
+plot_missing(data)
+```
+Como puede observarse, contamos con 569 valores faltantes en la última columna "X". Más adelante veremos como tratarlo.
+
+
+<font size="3">1.2 Análisis exploratorio de los datos </font> 
+
+En este paso nuestro objetivo será entender la distribución y relaciones de variables.
+
+<font size="2">Visualización de distribuciones y correlaciones: </font> 
+
+```{r}
+#Veamos un resumen gráfico general:
+
+plot_intro(data)
+```
+
+```{r}
+#Variables Categóricas:
+
+plot_bar(data)
+```
+```{r}
+#Variables Numéricas
+plot_histogram(data)
+```
+
+
+<font size="3">1.3 Preprocesamiento de los datos. </font> 
+
+<font size="2">Eliminación de valores faltantes: </font> 
+
+
+
+Para comenzar, ya sabemos que existe una columna cuyos valores son todos NA, es decir, faltantes. El primero paso en nuestro preprocesamiento será eliminar esta columna "x":
+
+```{r}
+data <- read.csv("data/data.csv")
+data
+head(data)
+```
+
+```{r}
+data <- data %>% select(-X)
+```
+
+Veamos si se ha borrado correctamente la columna X y si ahora existe algún otro valor faltante:
+
+```{r}
+colnames(data)
+```
+```{r}
+# Veamos si existen valores faltantes en nuestros datos:
+
+anyNA(data)
+
+#Contamos el numero de valores faltantes por columna:
+
+colSums(is.na(data))
+plot_missing(data)
+```
+
+Además de la columna con valores Faltantes, también tenemos una columna "ID" que no nos aporta ninguna información por lo que también procederemos a eliminarla:
+
+```{r}
+data <- data %>% select(-id)
+
+```
+
+
+```{r}
+colnames(data)
+head(data)
+
+```
+
+Como podemos observar, se ha eliminado la columna "id" y se ha verificado que no existen mas valores faltantes exceptos los ya eliminados en "X".
+
+Después de ellos contamos con un dataset de:
+
+```{r}
+dim(data)
+```
+569 filas y 31 columnas.
+
+<font size="2"> Codificación de variables Categóricas </font> 
+
+
+Anteriormente vimos que nuestro dataset cuenta con una única columna de valores categóricos. "Diagnosis" cuyos valores tienen el siguiente significado:
++ M (malignant)
++ B (benign)
+
+El siguiente paso en el preprocesado de datos será pasar esta columna a numérica. Como solo se presentan dos posibles valores (M y B), se aplicará Codificación Binaria: El valor "M" pasará a ser 1 y valor "B" pasará a ser 0.
+
+```{r}
+
+#M -> 1; B -> 0
+data$diagnosis <- ifelse(data$diagnosis == "M", 1, 0)
+```
+
+Vamos a verificar que se ha realizado correctamente la conversión:
+
+```{r}
+table(data$diagnosis)
+print(data$diagnosis)
+```
+Nos cercioramos de que no existe ningún otro valor categórico en el dataset:
+```{r}
+
+categorical_columns <- sapply(data, is.factor) | sapply(data, is.character)
+names(data)[categorical_columns]
+
+
+```
+Efectivamente, todas nuestras columnas ahora son numéricas, lo que nos da paso al siguiente punto en nuestro preprocesamiento de datos.
+
+<font size="2"> Estudio de correlación. </font> 
+
+
+Al tener nuestro dataset limpio de NA y solo presentes variables numéricas,  el siguiente paso será estudiar las posibles correlaciones de nuestro dataset.
+
+Estudiar la correlación de los datos ayuda a identificar patrones y relaciones entre variables, lo que podría conducir a nuevas hipótesis y descubrimientos. Además, un buen estudio de correlaciones podría ser útil para seleccionar variables relevantes y construir modelos en un futuro.
+
+
+Los valores que obtendremos tendrán la siguiente interpretación:
+
++ Correlación cercana a 1: Relación positiva fuerte.
++ Correlación cercana a -1: Relación negativa fuerte.
++ Correlación cercana a 0: No hay relación lineal significativa
+
+```{r}
+
+# Calcular matriz de correlación
+correlation_matrix <- cor(data, use = "complete.obs")  # Ignora valores faltantes
+
+
+# Graficar matriz de correlación
+corrplot(correlation_matrix, method = "color", type = "upper", tl.cex = 0.8)
+
+```
+```{r}
+
+# Graficar la matriz de correlación con valores en las celdas
+ggcorrplot(correlation_matrix, 
+           method = "circle",  # Utilizar círculos para representar correlaciones
+           type = "lower",     # Mostrar solo la mitad inferior
+           lab = TRUE,         # Añadir los valores de correlación
+           lab_size = 2,       # Tamaño del texto en las celdas
+           colors = c("blue", "white", "red"), # Colores para las correlaciones negativas, neutrales y positivas
+           title = "Matriz de Correlación",  # Título del gráfico
+           tl.cex = 10)       # Tamaño de las etiquetas
+
+```
+Como puede observarse, al tratarese un conjunto de datos con 31 variables, la matriz de correlación cuesta interpretarla.
+
+Por ello, como "diagnosis" es nuestra variable objetivo, vamos a observar cómo se correlacionan las demás variables con ella:
+
+
+```{r}
+# Calcular la correlación entre cada variable numérica y 'diagnosis'
+cor_with_target <- cor(data, data$diagnosis, use = "complete.obs")
+
+# Crear un data frame para ver las correlaciones junto con los nombres de las variables
+correlation_df <- data.frame(Variable = names(data), Correlation = cor_with_target)
+
+# Ordenar el data frame por la columna de Correlation en orden descendente
+correlation_df_sorted <- correlation_df[order(-correlation_df$Correlation), ]
+
+# Ver las correlaciones ordenadas junto con los nombres de las variables
+print(correlation_df_sorted)
+
+
+```
+En esta tabla podemos ver la correlación de cada variable con "diagnosis" en orden descendente.
+
+
+<font size="2">Selección de Atributos: </font> 
+
+AQUI DEBEMOS ESTUDIAR ELIMINAR VARIABLES DE MUY ALTA CORRELACIÓN YA QUE PODRÍAN SER REDUNDANTES (>0.9) ADEMÁS TAMBIÉN AQUELLAS DE MUY BAJA CORRELACIÓN, PERO TENIENDO EN CUENTA QUE:
+
+CORRELACION <0.3 PUEDEN ELIMINARSE SI TENEMOS MUCHAS
+0.3<C<0.5 PUEDEN SER RELEVANTES Y ÚTILES PARA ALGUNOS MODELOS 
+~0 NORMALMENTE NO AGREGAN VALOR PREDICTIVO
+
+IDEA:
+
+Como no es del todo necesario eliminar variables yo lo que haría es:
+
+-Trabajar con todas 
+-Guardar en otro df data_preprocessed <- data %>% select(-las variables que consideremos)
+-Hacer lo mismo con ese nuedo df y ver que conjunto funciona mejor.
+
