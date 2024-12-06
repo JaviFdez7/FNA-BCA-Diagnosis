@@ -2,7 +2,10 @@
 title: "R Notebook"
 output:
   html_notebook: default
+  word_document: default
   pdf_document: default
+  html_document:
+    df_print: paged
 ---
 
 ---
@@ -10,10 +13,12 @@ title: "R Notebook"
 output: html_notebook
 ---
 
- <font size="5"> Conjunto de datos de diágnostico de cáncer de mama en Wisconsin </font> 
+ <font size="5"> Conjunto de datos de diágnostico de cáncer de mama en Wisconsin. </font> 
  
+<font size="4"> 1. Análisis Inicial y Preprocesamiento de los Datos. </font> 
 
-<fotn size="3">1.1 Importación y Carga de Datos </font> 
+
+<fotn size="3">1.1 Importación y Carga de Datos. </font> 
 
 Para comenzar nuestro análisis es necesario realizar la carga de los datos:
 
@@ -200,6 +205,8 @@ Anteriormente vimos que nuestro dataset cuenta con una única columna de valores
 
 El siguiente paso en el preprocesado de datos será pasar esta columna a numérica. Como solo se presentan dos posibles valores (M y B), se aplicará Codificación Binaria: El valor "M" pasará a ser 1 y valor "B" pasará a ser 0.
 
+Aunque más adelante volveremos a pasarla a categórica, ahora es necesario hacerla binaria para poder estudiar la correlación de las variables.
+
 ```{r}
 
 #M -> 1; B -> 0
@@ -284,17 +291,196 @@ En esta tabla podemos ver la correlación de cada variable con "diagnosis" en or
 
 <font size="2">Selección de Atributos: </font> 
 
-AQUI DEBEMOS ESTUDIAR ELIMINAR VARIABLES DE MUY ALTA CORRELACIÓN YA QUE PODRÍAN SER REDUNDANTES (>0.9) ADEMÁS TAMBIÉN AQUELLAS DE MUY BAJA CORRELACIÓN, PERO TENIENDO EN CUENTA QUE:
+Una de las formas de hacer una correcta selección de atributos es inspeccionar la anterior tabla de correlación:
 
-CORRELACION <0.3 PUEDEN ELIMINARSE SI TENEMOS MUCHAS
-0.3<C<0.5 PUEDEN SER RELEVANTES Y ÚTILES PARA ALGUNOS MODELOS 
-~0 NORMALMENTE NO AGREGAN VALOR PREDICTIVO
+Como puede observarse, no existe ninguna variable que supere el 0,8, cuando las variables se correlacionan con la variable clase, en nuestro caso diagnosis, con más de un 0,9, suele ser conveniente eliminarlas para evitar redundancia, lo que no es nuestro caso. 
 
-IDEA:
+Por otro lado, tampoco tenemos valores demasiado bajos ni negativos, los valores negativos en nuestro caso, podrían ayudar al entrenamiento de nuestro modelo, es por ello, que de momento no se eliminarán variables del dataset. 
 
-Como no es del todo necesario eliminar variables yo lo que haría es:
+<font size="4"> 2. Análisis Supervisado.</font> 
 
--Trabajar con todas 
--Guardar en otro df data_preprocessed <- data %>% select(-las variables que consideremos)
--Hacer lo mismo con ese nuedo df y ver que conjunto funciona mejor.
+El aprendizaje supervisado, también conocido como machine learning supervisado, es una subcategoría del machine learning y la inteligencia artificial. Se define por el uso de conjuntos de datos etiquetados para entrenar algoritmos que clasifican los datos o predicen los resultados con precisión.
+
+A medida que se introducen datos en el modelo, éste ajusta sus ponderaciones hasta que el modelo se ha ajustado adecuadamente, lo que ocurre como parte del proceso de validación cruzada. 
+
+En nuestro análisis, la variable a predecir será "diagnosis", que como vimos anteriormente, es de tipo binario, tomando 1 cuando el tumor es maligno, y 0 cuando el tumor resulta benigno.
+
+En este análisis se han evaluado diferentes modelos de clasificación para un conjunto de datos binario con 569 muestras y 30 predictores, clasificados en dos categorías: 'Negative' y 'Positive'. Los modelos analizados son el Árbol de Decisión (CART), Random Forest (Bosque Aleatorio), Máquinas de Soporte Vectorial con núcleo Radial (SVM), y el Modelo Lineal Generalizado (GLM).
+
+El primer paso para el análisis supervisado es realizar la divión del dataset.
+
+<font size="2">2.1 División del Dataset: </font> 
+
+
+
+
+Para este paso, usaremos la validación cruzada k-fold para dividir el dataset y evaluar el modelo. Aunque podríamos dividir el conjunto en un 80% train y un 20% train, valores típicos, se ha optado por utilizar K-fold ya que asegura que cada subconjunto o fold del dataset es utilizado tanto para el entrenamiento como para prueba en distintas iteraciones, lo que nos proporcionará una evaluación más robusta.
+
+```{r}
+#Cargamos la librería caret
+library(caret)
+
+#Configuramos la validación cruzada K-fold
+set.seed(123)
+
+k <- 5 
+
+# Configurar K-fold Cross-Validation con probabilidades de clase
+train_control <- trainControl(
+  method = "cv",           # Cross-validation
+  number = k,              # Número de pliegues (folds)
+  classProbs = TRUE,       # Habilitar probabilidades de clase
+  summaryFunction = twoClassSummary, # Para métricas de clasificación binaria
+  savePredictions = "final" # Guardar las predicciones finales
+)
+
+
+```
+
+
+
+<font size="2">2.2 Entrenamiento del modelo: </font> 
+
+  
+  Cambiamos los niveles del factor "diagnosis" a nombres válidos, en este caso "positivo", "negativo".
+```{r}
+# Entrenar el modelo de Random Forest utilizando K-fold cross-validation
+set.seed(123)
+
+#Vamos a convertir
+data$diagnosis <- factor(data$diagnosis, levels = c(0, 1), labels = c("Negative", "Positive"))
+```
+
+
+  <font size="2">2.2.1 Árbol de Decisión (CART): </font> 
+  
+  El árbol de decisión es un modelo simple que divide los datos en segmentos basados en reglas de decisión. Es útil para clasificaciones donde las decisiones son lógicas y fáciles de entender
+  
+```{r}
+
+# Árbol de Decisión utilizando K-fold cross-validation
+model_cart <- train(
+  diagnosis ~ .,        # Usamos todas las variables predictoras
+  data = data,
+  method = "rpart",     # Árbol de decisión (CART)
+  trControl = train_control,  # Control de validación cruzada
+  metric = "ROC"        # Evaluar utilizando AUC (Área bajo la curva ROC)
+)
+
+# Ver el resumen del modelo entrenado
+print(model_cart)
+
+# Extraer la importancia de las variables
+importance_cart <- varImp(model_cart, scale = FALSE)
+importance_cart_df <- importance_cart$importance
+importance_cart_df$variable <- rownames(importance_cart_df)
+
+```
+El primer modelo analizado es el Árbol de Decisión (CART). Este modelo utiliza un valor de complejidad de poda (cp) de 0.0047, que fue seleccionado como el mejor parámetro mediante validación cruzada.
+
+La curva ROC del modelo es de 0.9362, lo que indica una alta capacidad para discriminar entre las dos clases. 
+
+La sensibilidad (capacidad del modelo para identificar correctamente las observaciones positivas) es de 0.9383, lo que sugiere que el modelo es muy eficiente para detectar las observaciones positivas, aunque algo menos efectivo que otros modelos en cuanto a la especificidad. De hecho, la especificidad (capacidad para identificar correctamente las observaciones negativas) es de 0.8960, lo que representa una leve caída respecto a la sensibilidad. 
+
+Este desempeño es sólido y equilibrado, pero no es el más alto entre los modelos evaluados.
+
+    <font size="2">2.2.2 Random Forest </font> 
+
+El Random Forest es un algoritmo que construye múltiples árboles de decisión y realiza una predicción agregando las predicciones de todos los árboles individuales. Es robusto ante el sobreajuste.
+```{r}
+model_rf <- train(
+  diagnosis ~ .,        # Usamos todas las variables predictoras
+  data = data,
+  method = "rf",        # Random Forest
+  trControl = train_control,  # Control de validación cruzada
+  metric = "ROC"        # Evaluar utilizando AUC (Área bajo la curva ROC)
+)
+
+# Ver el resumen del modelo entrenado
+print(model_rf)
+
+# Extraer la importancia de las variables
+importance_rf <- varImp(model_rf, scale = FALSE)
+importance_rf_df <- importance_rf$importance
+importance_rf_df$variable <- rownames(importance_rf_df)
+
+```
+  
+Para entender mejor los resultados del modelo, aclarar que el parámetro mtry en el contexto de Random Forest es uno de los hiperparámetros clave que se utiliza para controlar el número de variables (características) que el modelo considera para dividir cada nodo en cada árbol del bosque. Específicamente, mtry define cuántas características serán elegidas aleatoriamente para cada nodo cuando se construye un árbol en el Random Forest.
+ 
+ 
+Random Forest, muestra un desempeño destacable. Este modelo seleccionó el valor de mtry (número de variables aleatorias para cada división del árbol) igual a 2, lo que optimiza la capacidad de discriminación. Su curva ROC alcanza un valor impresionante de 0.9908, lo que es un indicador claro de su capacidad para separar las dos clases con gran precisión. Además, la sensibilidad de 0.9804 muestra que Random Forest tiene una excelente capacidad para detectar correctamente las observaciones positivas, y la especificidad de 0.9241 indica que también es eficaz en identificar las observaciones negativas. Este modelo sobresale por su alta precisión en ambos aspectos, lo que lo convierte en uno de los modelos más robustos y confiables para este conjunto de datos.
+
+  <font size="2">2.2.3 Support Vector Machine (SVM) </font> 
+  
+  El Support Vector Machine (SVM) es un algoritmo que intenta encontrar un hiperplano que mejor separe las diferentes clases de datos.
+  
+
+```{r}
+#install.packages("kernlab")
+library(kernlab)
+
+model_svm <- train(
+  diagnosis ~ .,        # Usamos todas las variables predictoras
+  data = data,
+  method = "svmRadial",  # Support Vector Machine con kernel radial
+  trControl = train_control,  # Control de validación cruzada
+  metric = "ROC"        # Evaluar utilizando AUC (Área bajo la curva ROC)
+)
+
+# Ver el resumen del modelo entrenado
+print(model_svm)
+
+# Extraer la importancia de las variables
+importance_svm <- varImp(model_svm, scale = FALSE)
+importance_svm_df <- importance_svm$importance
+importance_svm_df$variable <- rownames(importance_svm_df)
+
+```
+El tercer modelo evaluado es el de Máquinas de Soporte Vectorial con núcleo Radial (SVM). Este modelo, con un parámetro de regularización 𝐶=1 y un valor de sigma de 0.0475, mostró un desempeño excelente en términos de la curva ROC, alcanzando un valor de 0.9948, el más alto entre todos los modelos. Esta métrica refleja una capacidad de discriminación superior, lo que implica que el modelo tiene una alta habilidad para separar correctamente las clases 'Negative' y 'Positive'. La sensibilidad de 0.9748 y la especificidad de 0.9670 también son notablemente altas, lo que sugiere que el modelo tiene un buen rendimiento tanto en la detección de las observaciones positivas como en la correcta identificación de las negativas. Sin embargo, es importante destacar que el modelo SVM presentó varias advertencias durante el proceso de optimización (warnings), relacionadas con problemas de convergencia y probabilidades extremas de 0 o 1. Esto podría indicar que el modelo podría estar sobreajustando o enfrentando dificultades para encontrar un equilibrio estable, lo que debe tenerse en cuenta al evaluar su estabilidad y generalización.
+
+
+  <font size="2">2.2.4 Regresión Logística </font> 
+  
+  Este algoritmo es un modelo de clasificación que predice la probabilidad de que una observación pertenzca a una clase o no.
+  
+```{r}
+
+
+model_logit <- train(
+  diagnosis ~ .,        # Usamos todas las variables predictoras
+  data = data,
+  method = "glm",       # Regresión Logística
+  trControl = train_control,  # Control de validación cruzada
+  metric = "ROC"        # Evaluar utilizando AUC (Área bajo la curva ROC)
+)
+
+# Ver el resumen del modelo entrenado
+print(model_logit)
+
+# Extraer la importancia de las variables
+importance_logit <- varImp(model_logit, scale = FALSE)
+importance_logit_df <- importance_logit$importance
+importance_logit_df$variable <- rownames(importance_logit_df)
+
+```
+El último modelo considerado es el Modelo Lineal Generalizado (GLM). Este modelo, a pesar de ser sencillo en su estructura, mostró un rendimiento respetable. Su curva ROC alcanzó un valor de 0.9552, lo cual es inferior a los de Random Forest y SVM, pero sigue siendo adecuado para tareas de clasificación. La sensibilidad de 0.9438 indica que el modelo tiene una buena capacidad para identificar las observaciones positivas, mientras que la especificidad de 0.9484 es ligeramente mejor que la sensibilidad, lo que sugiere que el modelo tiene un desempeño ligeramente mejor para detectar las observaciones negativas en comparación con las positivas. Aunque el modelo GLM es funcional, su rendimiento en términos de la curva ROC es algo inferior en comparación con los modelos más complejos como SVM y Random Forest.  
+
+  <font size="2">2.3 Comparación de Modelos </font> 
+
+```{r}
+# Comparar el rendimiento de los modelos
+resamples <- resamples(list(cart = model_cart, rf = model_rf, svm = model_svm, logit = model_logit))
+
+# Ver el resumen de la comparación entre los modelos
+summary(resamples)
+
+# Visualización de la comparación
+bwplot(resamples)
+
+```
+
+  <font size="2">2.4 Estudio de la Importancia de las Variables </font> 
+
+
 
