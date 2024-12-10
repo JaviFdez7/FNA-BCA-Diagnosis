@@ -342,13 +342,13 @@ train_control <- trainControl(
 <font size="2">2.2 Entrenamiento del modelo: </font> 
 
   
-  Cambiamos los niveles del factor "diagnosis" a nombres válidos, en este caso "positivo", "negativo".
+  Cambiamos los niveles del factor "diagnosis" a nombres válidos, en este caso "M" para los tumores malignos, "B" para aquellos benignos.
 ```{r}
 # Entrenar el modelo de Random Forest utilizando K-fold cross-validation
 set.seed(123)
 
 #Vamos a convertir
-data$diagnosis <- factor(data$diagnosis, levels = c(0, 1), labels = c("Negative", "Positive"))
+data$diagnosis <- factor(data$diagnosis, levels = c(0, 1), labels = c("B", "M"))
 ```
 
 
@@ -483,4 +483,397 @@ bwplot(resamples)
   <font size="2">2.4 Estudio de la Importancia de las Variables </font> 
 
 
+El estudio de la importancia de variables nos permite identificar cuáles son las características que más influyen en las predicciones realizadas. Esto es especialmente útil cuando trabjamos con datos de ámbito sanitario, ya que nos permite priorizar las variables más relevantes para realizar diagnósticos o tomar decisiones informadas.
+
+El objetivo del estudio de importancia de variables es eliminar aquellas que consistentemente tienen baja importancia en todos los modelos:
+
+1- Obtener la importancia de variables de cada modelo.
+
+  <font size="2">2.4.1 Estudio de la Importancia de las Variables con Árbol de Decisión (CART) </font> 
+
+
+En los árboles de decisión, la importancia de vairables se calcula en función de las ganancias de reducción de impureza, por ejemplo, la reducción de la entropía o del índice Gini en los nodos donde la variables es utilizada para dividr los datos.
+
+```{r}
+plot(importance_cart, main = "Importancia de Variables - CART")
+```
+
+ <font size="2">2.4.2 Estudio de la Importancia de las Variables con Random Forest </font> 
+ 
+ En Random Forest la importancia se calcula mediante dos enfoques comunes:
+ 
+  - Importancia basada en permutación: Evalúa cómo cambia la precisión del modelo al permutar aleatoriamente los valores de una variable.
+  - Reducción promedio de la impureza: Calcula cuánto contribuye una variable a la reducción de impureza a través de todos los árboles del bosque.
+  
+```{r}
+plot(importance_rf, main = "Importancia de Variables - Random Forest")
+```
+  
+ 
+ <font size="2">2.4.3 Estudio de la Importancia de las Variables con Support Vector Machine (SVM) </font>  
+ 
+ El calculo de la importancia en SVM no es tan directo, ya que este modelo no se basa en una estructura jerárquica o en una gregación de árboles. Podemos estimar la importancia de las variables mediante análisis post-hoc, como la evaluación de los coeficientes en el espacio formado por el núcleo radial.
+ 
+```{r}
+plot(importance_svm, main = "Importancia de Variables- SVM")
+```
+ 
+ <font size="2">2.4.4 Estudio de la Importancia de las Variables con Regresión Logística </font> 
+ 
+ En regresión logística, la importancia de variables se puede analizar mediante los coeficientes estimados del modelo. Estos coeficientes indican la magnitud y la dirección del efecto de cada variable en la probabilidad de que un tumor sea maligno.
+ 
+```{r}
+plot(importance_logit, main = "Importancia de Variables - GLM")
+```
+ 
+ <font size="2">2.4.4 Comparación General del estudio de la Importancia de las Variables </font> 
+ 
+ 
+
+2- Normalizar la importancia para compararla entre modelos.
+3- Calcular una métrica consolidada de importancia promedio.
+4- Identificar las variables con menor impacto en todos los modelos.
+
+```{r}
+# Consolidar importancia de variables
+importance_combined <- merge(
+  merge(importance_cart_df, importance_rf_df, by = "variable", suffixes = c("_cart", "_rf")),
+  merge(importance_svm_df, importance_logit_df, by = "variable", suffixes = c("_svm", "_logit")),
+  by = "variable"
+)
+
+# Promedio de importancia
+importance_combined$mean_importance <- rowMeans(importance_combined[, -1], na.rm = TRUE)
+
+# Seleccionar las menos importantes (por debajo de un umbral, por ejemplo, el percentil 20)
+threshold <- quantile(importance_combined$mean_importance, 0.2)
+least_important_vars <- importance_combined$variable[importance_combined$mean_importance <= threshold]
+
+# Eliminar estas variables del dataset original
+data_reduced <- data[, !(names(data) %in% least_important_vars)]
+
+# Guardar el dataset reducido
+write.csv(data_reduced, "data_reduced.csv", row.names = FALSE)
+
+```
+ 
+```{r}
+data_reduced
+dim(data_reduced)
+
+```
+
+```{r}
+colnames(data_reduced)
+```
+
+```{r}
+colnames(data)
+```
+El siguiente paso será repetir nuestro análisis supervisado esta vez usando el dataset reducido en el que no aparecen las columnas "menos importantes". De esta forma podremos analizar si los resultados mejorar, empeoran o no afectan con el estudio de importancia de varianles:
+
+
+ <font size="2">3. Análisis Supervisado con dataset reducido. </font> 
+  <font size="2">3.1 Árbol de Decisión (CART) </font> 
+  
+```{r}
+# Árbol de Decisión utilizando K-fold cross-validation
+model_cart <- train(
+  diagnosis ~ .,        # Usamos todas las variables predictoras
+  data = data_reduced,
+  method = "rpart",     # Árbol de decisión (CART)
+  trControl = train_control,  # Control de validación cruzada
+  metric = "ROC"        # Evaluar utilizando AUC (Área bajo la curva ROC)
+)
+
+# Ver el resumen del modelo entrenado
+print(model_cart)
+```
+  
+ <font size="2">3.2 Random Forest </font> 
+ 
+```{r}
+model_rf <- train(
+  diagnosis ~ .,        # Usamos todas las variables predictoras
+  data = data_reduced,
+  method = "rf",        # Random Forest
+  trControl = train_control,  # Control de validación cruzada
+  metric = "ROC"        # Evaluar utilizando AUC (Área bajo la curva ROC)
+)
+
+# Ver el resumen del modelo entrenado
+print(model_rf)
+
+```
+ 
+ <font size="2">3.3 Support Vector Machine (SVM) </font> 
+ 
+```{r}
+#install.packages("kernlab")
+library(kernlab)
+
+model_svm <- train(
+  diagnosis ~ .,        # Usamos todas las variables predictoras
+  data = data_reduced,
+  method = "svmRadial",  # Support Vector Machine con kernel radial
+  trControl = train_control,  # Control de validación cruzada
+  metric = "ROC"        # Evaluar utilizando AUC (Área bajo la curva ROC)
+)
+
+# Ver el resumen del modelo entrenado
+print(model_svm)
+
+```
+ 
+ <font size="2">3.4 Regresión Logística </font> 
+
+```{r}
+model_logit <- train(
+  diagnosis ~ .,        # Usamos todas las variables predictoras
+  data = data_reduced,
+  method = "glm",       # Regresión Logística
+  trControl = train_control,  # Control de validación cruzada
+  metric = "ROC"        # Evaluar utilizando AUC (Área bajo la curva ROC)
+)
+
+# Ver el resumen del modelo entrenado
+print(model_logit)
+```
+ 
+ 
+ <font size="2">3.5 Comparación de resultados análisis supervisado dataset incial vs dataset reducido: </font> 
+
+```{r}
+
+
+# Crear los datos para cada modelo en formato de data frame
+# Dataset inicial
+inicial <- data.frame(
+  Modelo = c("CART", "Random Forest", "SVM", "GLM"),
+  ROC = c(0.9431, 0.9927, 0.9954, 0.9528),
+  Sens = c(0.9411, 0.9804, 0.9749, 0.9468),
+  Spec = c(0.8911, 0.9198, 0.9625, 0.9434),
+  Dataset = "Inicial"
+)
+
+# Dataset reducido
+reducido <- data.frame(
+  Modelo = c("CART", "Random Forest", "SVM", "GLM"),
+  ROC = c(0.9451, 0.9909, 0.9946, 0.9759),
+  Sens = c(0.9523, 0.9691, 0.9692, 0.9663),
+  Spec = c(0.8915, 0.9296, 0.9621, 0.9579),
+  Dataset = "Reducido"
+)
+
+# Unir ambos datasets en una sola tabla por el modelo
+comparativa <- merge(inicial, reducido, by = "Modelo")
+
+# Imprimir la tabla en consola
+print(comparativa)
+
+```
+
+```{r}
+# Instalar flextable si no está instalado
+#install.packages("flextable")
+
+# Cargar la librería
+library(flextable)
+
+# Crear la tabla con flextable
+tabla_flex <- flextable(comparativa)
+
+# Imprimir la tabla en un entorno que soporte flextable (por ejemplo, RStudio)
+tabla_flex
+
+```
+
+- CART:
+
+La sensibilidad mejora con el dataset reducido, lo que indica una mejor capacidad para detectar casos positivos. Esto puede deberse a que las variables menos relevantes generaban divisiones innecesarias en el árbol.
+
+- Random Forest:
+
+Aunque hay una leve disminución en ROC y sensibilidad, la especificidad mejora. Esto implica que el modelo con el dataset reducido identifica mejor los casos negativos.
+
+- SVM:
+
+El impacto del dataset reducido es mínimo, pero muestra una ligera disminución en todas las métricas. Esto sugiere que las variables eliminadas tenían una influencia menor, pero no eran completamente irrelevantes.
+
+- GLM:
+
+El modelo con dataset reducido muestra mejoras claras en todas las métricas, lo que refuerza la idea de que las variables eliminadas no eran útiles para este enfoque lineal.
+
+En resumen: La eliminación de variables menos importantes mantiene un rendimiento comparable, e incluso mejora algunas métricas específicas en ciertos modelos.
+
+Esto sugiere que las variables eliminadas no aportaban información relevante o incluso podían introducir ruido.
+
+Reducir el número de variables tiene ventajas prácticas, como menores requerimientos computacionales y mayor interpretabilidad, sin comprometer el rendimiento.
+
+<font size="4"> 4. Análisis No Supervisado.</font> 
+
+El análisis no supervisado se centra en explorar patrones o estructuras en los datos sin utlizar etiquetas o clases. Para éste análisis, se utulizarán técnicas como clustering o reducción de dimensionalidad.
+
+
+<font size="2">4.1 Preparación del Dataset </font> 
+
+El primer paso será eliminar la columna "diagnosis" y normalizar el dataset, ya que muchas técnicas de clustering y reducción de dimensionalidad son sensibles a las escalas de las variables.
+
+```{r}
+data_UnSupervised <- data %>% select(-diagnosis)
+head(data_UnSupervised)
+data_UnSupervised$diagnosis
+```
+
+```{r}
+# Normalizar los datos (sin la variable de respuesta si existe)
+preprocess_params <- preProcess(data_UnSupervised[, -ncol(data_UnSupervised)], method = c("center", "scale"))
+data_normalized <- predict(preprocess_params, data_UnSupervised[, -ncol(data_UnSupervised)])
+
+```
+
+<font size="2">4.2 Clustering: Determinación del Número Óptimo de Clusters </font>
+
+Para ello utilizaremos el método del codo y el índice silhouette:
+
+```{r}
+# Método del codo
+wss <- (nrow(data_normalized) - 1) * sum(apply(data_normalized, 2, var))
+for (i in 2:15) wss[i] <- sum(kmeans(data_normalized, centers = i)$withinss)
+
+plot(1:15, wss, type = "b", xlab = "Número de Clusters", ylab = "Suma de Cuadrados Internos")
+
+# Índice silhouette
+library(cluster)
+silhouette_scores <- numeric()
+for (i in 2:15) {
+  km <- kmeans(data_normalized, centers = i)
+  silhouette_scores[i] <- mean(silhouette(km$cluster, dist(data_normalized))[, 3])
+}
+plot(2:15, silhouette_scores[-1], type = "b", xlab = "Número de Clusters", ylab = "Puntaje de Silhouette")
+
+```
+
+
+<font size="2">4.3 K-Means </font>
+
+Una vez determinado el número óptimo de clusters, se ejecuta K-means:
+
+```{r}
+set.seed(123)
+
+optimal_clusters = 4
+
+kmeans_model <- kmeans(data_normalized, centers = optimal_clusters, nstart = 25)
+
+# Agregar etiquetas de cluster al dataset original
+data$cluster <- kmeans_model$cluster
+
+```
+
+
+<font size="2">4.4 PCA </font>
+
+El próximo paso de nuestro análisis no supervisado será utilizar el Análisis de Componentes Principales para visualizar la estructura de los datos y validar los resultados del clustering.
+
+
+```{r}
+# PCA
+pca_model <- prcomp(data_normalized, scale = TRUE)
+
+# Visualización de los dos primeros componentes principales
+library(ggplot2)
+pca_data <- data.frame(pca_model$x[, 1:2], cluster = as.factor(data$cluster))
+ggplot(pca_data, aes(x = PC1, y = PC2, color = cluster)) +
+  geom_point() +
+  theme_minimal() +
+  labs(title = "Clustering visualizado en espacio PCA")
+
+```
+
+Se visualizan claramente cuatro clústeres.
+
+Los clústeres están bien definidos y separados espacialmente, especialmente entre el clúster púrpura y los demás.
+
+Hay un grado menor de solapamiento entre los clústeres, lo que sugiere que las variables originales ofrecen una separación más clara entre las clases en este espacio.
+Respecto al espacio de Variación, los puntos están distribuidos en torno a coordenadas más centradas (de -15 a 5 en PC1 y -10 a 10 en PC2).
+
+Vamos también a repetir el clustering con el dataset reducido generado durante el estudio de la importancia de las variables:
+
+<font size="2">4.5 Análisis No Supervisado con Dataset Reducido según importancia de variables </font>
+
+
+
+```{r}
+data_UnSupervised_reduced <- data_reduced %>% select(-diagnosis)
+head(data_UnSupervised_reduced)
+data_UnSupervised_reduced$diagnosis
+```
+
+```{r}
+# Normalizar los datos (sin la variable de respuesta si existe)
+preprocess_params <- preProcess(data_UnSupervised_reduced[, -ncol(data_UnSupervised_reduced)], method = c("center", "scale"))
+data_normalized_reduced <- predict(preprocess_params, data_UnSupervised_reduced[, -ncol(data_UnSupervised_reduced)])
+```
+
+
+```{r}
+# Método del codo
+wss <- (nrow(data_normalized_reduced) - 1) * sum(apply(data_normalized_reduced, 2, var))
+for (i in 2:15) wss[i] <- sum(kmeans(data_normalized_reduced, centers = i)$withinss)
+
+plot(1:15, wss, type = "b", xlab = "Número de Clusters", ylab = "Suma de Cuadrados Internos")
+
+# Índice silhouette
+library(cluster)
+silhouette_scores <- numeric()
+for (i in 2:15) {
+  km <- kmeans(data_normalized_reduced, centers = i)
+  silhouette_scores[i] <- mean(silhouette(km$cluster, dist(data_normalized_reduced))[, 3])
+}
+plot(2:15, silhouette_scores[-1], type = "b", xlab = "Número de Clusters", ylab = "Puntaje de Silhouette")
+```
+
+k-means
+
+```{r}
+set.seed(123)
+
+optimal_clusters_2 = 5
+
+kmeans_model_reduced <- kmeans(data_normalized_reduced, centers = optimal_clusters_2, nstart = 25)
+
+# Agregar etiquetas de cluster al dataset original
+data_reduced$cluster <- kmeans_model_reduced$cluster
+```
+
+```{r}
+# PCA
+pca_model_reduced <- prcomp(data_normalized_reduced, scale = TRUE)
+
+# Visualización de los dos primeros componentes principales
+library(ggplot2)
+pca_data_reduced <- data.frame(pca_model_reduced$x[, 1:2], cluster = as.factor(data_reduced$cluster))
+ggplot(pca_data_reduced, aes(x = PC1, y = PC2, color = cluster)) +
+  geom_point() +
+  theme_minimal() +
+  labs(title = "Clustering visualizado en espacio PCA")
+```
+
+En este caso, se visualizan cinco clústeres, lo que podría indicar una mayor sensibilidad del modelo al agrupar los datos reducidos.
+
+Los clústeres están más compactos en el centro del gráfico, con menos separación clara en comparación con la versión completa.
+
+Existen clústeres adicionales (como el clúster 5, representado en rosa), lo que puede indicar una partición más forzada o sensibilidad al ruido.
+
+Hay un mayor solapamiento entre los clústeres en comparación con el gráfico sin reducción de datos.
+
+El rango del eje PC1 varía de -5 a 15, mientras que PC2 tiene una distribución de -5 a 15, lo que sugiere un cambio en la importancia relativa de los componentes principales después de la reducción de variables.
+
+
+En conclusión, sin reducción, los clústeres son más definidos y separados, lo que sugiere que las variables eliminadas contienen información relevante para distinguir los grupos.
+
+Con reducción, los clústeres muestran mayor solapamiento y parecen menos definidos, posiblemente debido a la pérdida de información al reducir las variables.
+
+La aparición de un quinto clúster en el conjunto reducido indica que la reducción puede introducir sensibilidad al ruido o revelar patrones más complejos (aunque menos significativos).
 
