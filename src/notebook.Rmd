@@ -675,7 +675,7 @@ print(comparativa)
 
 ```{r}
 # Instalar flextable si no está instalado
-#install.packages("flextable")
+install.packages("flextable")
 
 # Cargar la librería
 library(flextable)
@@ -712,7 +712,7 @@ Reducir el número de variables tiene ventajas prácticas, como menores requerim
 
 <font size="4"> 4. Análisis No Supervisado.</font> 
 
-El análisis no supervisado se centra en explorar patrones o estructuras en los datos sin utlizar etiquetas o clases. Para éste análisis, se utulizarán técnicas como clustering o reducción de dimensionalidad.
+El análisis no supervisado se centra en explorar patrones o estructuras en los datos sin utilizar etiquetas o clases. Para éste análisis, se utulizarán técnicas como clustering o reducción de dimensionalidad.
 
 
 <font size="2">4.1 Preparación del Dataset </font> 
@@ -877,3 +877,56 @@ Con reducción, los clústeres muestran mayor solapamiento y parecen menos defin
 
 La aparición de un quinto clúster en el conjunto reducido indica que la reducción puede introducir sensibilidad al ruido o revelar patrones más complejos (aunque menos significativos).
 
+
+
+
+
+
+
+
+
+<font size="4"> 5.Reglas de asociación con algoritmo Apriori.</font> 
+
+Las reglas de asociación son usadas en Data Mining para identificar relaciones entre elementos de un conjunto de datos. Estas relaciones, a su vez, nos ayudan a encontrar patrones de datos. 
+
+Estan formadas por un antecedente {a} y un consecuente {b}, de manera que {a} implica -> {b} 
+También es conveniente conocer los términos de:
+- Soporte: Proporción de transacciones que contienen ambos conjuntos de ítems (antecedente y consecuente)
+- Confianza: Aciertos o cómo de bien predice el antecedente al consecuente.
+
+<font size="3">5.1 Algoritmo Apriori </font> 
+
+Haremos uso del Algoritmo Apriori para obtener las reglas de asociación ya que es útil para encontrar itemsets frecuentes en datos transaccionales (datos tipo eventos en un intervalo de tiempo determinado)
+
+<font size="2">5.1.1 Fase 1: Reducción del número de candidatos </font>
+
+Generar todos los itemsets con 1 único ítem. Posteriormente, se combinarán estos itemstes formando itemsets con 2 elementos y así sucesivamente. Nos quedaremos con los pares cuyo soporte sea mayor o igual a un minsup (eliminando aquellos que no cumplen con el umbral de soporte)
+
+1. Intalaremos el paquete necesario (arules) paquete en R que proporciona la funcionalidad para trabajar con reglas de asociación.
+
+```{r}
+#install.packages("arules")
+library(arules)
+```
+2. Cargamos los datos como transacciones:
+Formato basket: Cada transacción se interpreta como un conjunto de ítems (basket), permitiendo tanto datos categóricos (diagnosis) como continuos (el resto) en la misma transacción.
+
+```{r}
+transacciones <- read.transactions("data_reduced.csv", format = "basket", sep = ",")
+
+```
+<font size="2">5.1.2 Fase 2: Generar reglas </font>
+Parámetros: soporte mínimo (0.01 -> 1%) y confianza mínima (80%)
+
+```{r}
+reglasAsociacion <- apriori(transacciones, parameter = list(supp = 0.01, conf = 0.8))
+
+```
+Filtramos las reglas basadas en el lift y la confianza, así solo se consideran aquellas con un lift mayor que 1.5 y una confianza superior al 80%.
+lift > 1.5 fuerte asociación entre los ítems en la regla.
+confidence >= 0.8 asegura que la probabilidad de que el consecuente ocurra cuando el antecedente está presente es alta.
+
+```{r}
+filtradas <- subset(reglasAsociacion, lift > 1.5 & confidence >= 0.8)
+inspect(filtradas)
+```
