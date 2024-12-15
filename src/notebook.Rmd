@@ -23,7 +23,7 @@ output: html_notebook
 
 ## Resumen
 
-  Este proyecto tiene como objetivo la aplicación de técnicas de aprendizaje supervisado y no supervisado para el diagnóstico de cáncer de mama, utilizando un conjunto de datos que contiene características extraídas de imágenes de aspirado con aguja fina (FNA) de masas mamarias. El conjunto de datos contiene 569 muestras, con 357 benignas y 212 malignas, y 33 características que describen diversas propiedades de los núcleos celulares en las imágenes. En este estudio, se explorarán varios enfoques de clasificación supervisada, como **CART**, **Random Forest**, **SVM**, **Regresión logística** y **redes neuronales** para predecir el diagnóstico de las muestras, además de aplicar técnicas no supervisadas como el **clustering** y la **reducción de dimensionalidad** a través de **PCA** y **T-SNE**. Se espera que el análisis combinado de ambos enfoques permita mejorar la precisión en el diagnóstico y proporcionar una mejor comprensión de los patrones subyacentes en los datos. **Se discutirán los resultados obtenidos y se presentarán conclusiones sobre la efectividad de las técnicas empleadas.**
+Este proyecto tiene como objetivo la aplicación de técnicas de aprendizaje supervisado y no supervisado para el diagnóstico de cáncer de mama, utilizando un conjunto de datos que contiene características extraídas de imágenes de aspirado con aguja fina (FNA) de masas mamarias. El conjunto de datos contiene 569 muestras, con 357 benignas y 212 malignas, y 33 características que describen diversas propiedades de los núcleos celulares en las imágenes. En este estudio, se explorarán varios enfoques de clasificación supervisada, como **CART**, **Random Forest**, **SVM**, **Regresión logística** y **redes neuronales** para predecir el diagnóstico de las muestras, además de aplicar técnicas no supervisadas como el **clustering** y la **reducción de dimensionalidad** a través de **PCA** y **T-SNE**. Se espera que el análisis combinado de ambos enfoques permita mejorar la precisión en el diagnóstico y proporcionar una mejor comprensión de los patrones subyacentes en los datos. Las conclusiones demuestran que el uso de técnicas de aprendizaje combinado puede significativamente mejorar la precisión y la comprensión de las características críticas necesarias para la detección temprana del cáncer de mama.
 
 ## 1. Introducción
 
@@ -41,19 +41,18 @@ En la **Figura 1** se ilustra el procedimiento de aspiración con aguja fina (FN
 <img src="images/cells.jpg" alt="Células extraídas de FNA" style="width: 35%;"/> <br> <b>Figura 2:</b><i> Células extraídas de FNA</i>
 :::
 
-El conjunto de datos incluye 33 características, como el radio, la textura, el perímetro y la simetría de los núcleos celulares, las cuales se utilizan para determinar si una muestra es **benigna** o **maligna**.  
+El conjunto de datos incluye 33 características, como el radio, la textura, el perímetro y la simetría de los núcleos celulares, las cuales se utilizan para determinar si una muestra es **benigna** o **maligna**.
 
-Estas características se pueden agrupar en:  
+Estas características se pueden agrupar en:
 
-**Relacionadas con el tamaño**  
-Incluyen medidas que describen el tamaño y la extensión de los núcleos celulares. El **radio** mide el tamaño de la circunferencia y se reporta como la media (`radius_mean`), el peor caso (`radius_worst`) y la desviación estándar (`radius_se`). El **perímetro** indica la longitud alrededor del núcleo, reportado de manera similar como media (`perimeter_mean`), peor caso (`perimeter_worst`) y desviación estándar (`perimeter_se`). Por último, el **área** representa el espacio ocupado por el núcleo, también dividido en media (`area_mean`), peor caso (`area_worst`) y desviación estándar (`area_se`).  
+**Relacionadas con el tamaño**\
+Incluyen medidas que describen el tamaño y la extensión de los núcleos celulares. El **radio** mide el tamaño de la circunferencia y se reporta como la media (`radius_mean`), el peor caso (`radius_worst`) y la desviación estándar (`radius_se`). El **perímetro** indica la longitud alrededor del núcleo, reportado de manera similar como media (`perimeter_mean`), peor caso (`perimeter_worst`) y desviación estándar (`perimeter_se`). Por último, el **área** representa el espacio ocupado por el núcleo, también dividido en media (`area_mean`), peor caso (`area_worst`) y desviación estándar (`area_se`).
 
-**Relacionadas con la forma**  
-Estas variables describen características geométricas de los núcleos, enfocándose en irregularidades en su borde. La **suavidad** mide la regularidad de los bordes (`smoothness_mean`, `smoothness_worst`, `smoothness_se`), mientras que la **compacidad** evalúa qué tan redonda es la forma del núcleo (`compactness_mean`, `compactness_worst`, `compactness_se`). La **concavidad** mide el grado de hundimiento en los bordes (`concavity_mean`, `concavity_worst`, `concavity_se`) y los **puntos cóncavos** representan el número de puntos específicos donde estos hundimientos son evidentes (`concave points_mean`, `concave points_worst`, `concave points_se`).  
+**Relacionadas con la forma**\
+Estas variables describen características geométricas de los núcleos, enfocándose en irregularidades en su borde. La **suavidad** mide la regularidad de los bordes (`smoothness_mean`, `smoothness_worst`, `smoothness_se`), mientras que la **compacidad** evalúa qué tan redonda es la forma del núcleo (`compactness_mean`, `compactness_worst`, `compactness_se`). La **concavidad** mide el grado de hundimiento en los bordes (`concavity_mean`, `concavity_worst`, `concavity_se`) y los **puntos cóncavos** representan el número de puntos específicos donde estos hundimientos son evidentes (`concave points_mean`, `concave points_worst`, `concave points_se`).
 
-**Relacionadas con la textura y fractales**  
-Estas características están asociadas a la apariencia y complejidad de la imagen de los núcleos celulares. La **textura** mide la variación en la intensidad de los píxeles y se reporta como media (`texture_mean`), peor caso (`texture_worst`) y desviación estándar (`texture_se`). Por su parte, la **dimensión fractal** describe la irregularidad del borde de los núcleos celulares y también se mide como media (`fractal_dimension_mean`), peor caso (`fractal_dimension_worst`) y desviación estándar (`fractal_dimension_se`).  
-
+**Relacionadas con la textura y fractales**\
+Estas características están asociadas a la apariencia y complejidad de la imagen de los núcleos celulares. La **textura** mide la variación en la intensidad de los píxeles y se reporta como media (`texture_mean`), peor caso (`texture_worst`) y desviación estándar (`texture_se`). Por su parte, la **dimensión fractal** describe la irregularidad del borde de los núcleos celulares y también se mide como media (`fractal_dimension_mean`), peor caso (`fractal_dimension_worst`) y desviación estándar (`fractal_dimension_se`).
 
 El análisis se centra en la aplicación de técnicas de aprendizaje supervisado, como **CART**, **Random Forest** y **SVM**, para predecir el diagnóstico basado en las características numéricas. Además, se aplicarán técnicas de aprendizaje no supervisado, como el **clustering** y la **reducción de dimensionalidad** mediante **PCA** , para explorar los patrones ocultos en los datos y posiblemente mejorar la precisión de los modelos.
 
@@ -72,7 +71,8 @@ El desarrollo de este proyecto se llevará a cabo a través de un enfoque estruc
     -   **SVM (Support Vector Machine)**: Un modelo que encuentra el hiperplano óptimo que separa las clases de manera eficaz.
     -   **Regresión logística**: Un modelo estadístico que puede adaptarse a diferentes distribuciones de las variables dependientes, como la binomial en este caso.\
         Se evaluará la **Importancia de las Variables** en los modelos para identificar las características más influyentes en las predicciones.
-    -  **Redes Neuronales**: Un modelo de aprendizaje profundo que puede capturar relaciones complejas entre las variables y adaptarse a patrones no lineales en los datos.
+    -   **Redes Neuronales**: Un modelo de aprendizaje profundo que puede capturar relaciones complejas entre las variables y adaptarse a patrones no lineales en los datos.
+
 3.  **Experimentación con el Dataset Reducido**\
     Posteriormente, se realizará una **experimentación** en la que se modificarán las características del dataset mediante la eliminación de variables menos relevantes, basándose en la **importancia de las variables** obtenida de los modelos. Esto permitirá optimizar los modelos y reducir el sobreajuste, mejorando la capacidad de generalización del sistema de diagnóstico.
 
@@ -103,7 +103,7 @@ Se instalan los paquetes que serán necesarios durante el proyecto:
 -   Ggplot2: Personalización de gráficas.
 -   Psych: Para análisis estadístico
 -   Corrplot: Visualización de matriz de correlación.
--   Car:  Para complementar técnicas de regresión.
+-   Car: Para complementar técnicas de regresión.
 -   pRoc: Proporciona herramientas para visualizar., suavizar y comparar curvas Roc.
 
 ```{r setup, warning=FALSE, message=FALSE}
@@ -160,16 +160,14 @@ data <- read.csv("data/data.csv")
 head(data)
 ```
 
-
-
 ```{r}
 dim <- dim(data)
 
 cat("Número de columnas:", dim[2], "\n")
 cat("Número de filas:", dim[1], "\n")
 ```
-Como se puede observar, el dataset cuenta con 569 filas y 33 columnas.
 
+Como se puede observar, el dataset cuenta con 569 filas y 33 columnas.
 
 A continuación, se muestra la estructura, tipos y algunos ejemplos de las variables del dataset para tener una visión global del las distintas variables con las que se cuenta.
 
@@ -184,17 +182,14 @@ clases_df <- data.frame(Clase = clases)
 
 print(clases_df, row.names = FALSE)
 ```
-Se obtienen las clases de cada columna en el conjunto de datos para entender mejor su tipo de datos y estructura. Esto permite visualizar rápidamente el tipo de variable (numérica, categórica, etc.) que se encuentra en el dataset.
 
+Se obtienen las clases de cada columna en el conjunto de datos para entender mejor su tipo de datos y estructura. Esto permite visualizar rápidamente el tipo de variable (numérica, categórica, etc.) que se encuentra en el dataset.
 
 Se visualiza un resumen estádistico de los datos.
 
 ```{r}
 describe(data)
 ```
-
-
-
 
 Se verifica si existen valores faltantes en los datos utilizando la función `anyNA()`. Esto permite identificar rápidamente si hay datos incompletos en el dataset que puedan requerir limpieza o manejo especial.
 
@@ -286,10 +281,9 @@ cat("Número de filas:", dim[1], "\n")
 
 Anteriormente, vimos que nuestro dataset cuenta con una única columna de valores categóricos, "Diagnosis", cuyos valores tienen el siguiente significado: - M (malignant) - B (benign)
 
-El siguiente paso en el preprocesado de datos será pasar esta columna a numérica, lo que será necesario para estudiar la correlación de variables de nuestro dataset. 
+El siguiente paso en el preprocesado de datos será pasar esta columna a numérica, lo que será necesario para estudiar la correlación de variables de nuestro dataset.
 
 Como solo se presentan dos posibles valores ("M" y "B"), se aplicará Codificación Binaria: El valor "M" pasará a ser 1 y valor "B" pasará a ser 0.
-
 
 ```{r}
 
@@ -635,8 +629,7 @@ Redes neuronales tambien cuenta con buen desempeño aunque con menor sensibilida
 
 ### 3.3. Experimentación de modelos supervisados con reducción de variables
 
-En esta sección, se experimentará con la reducción de variables para evaluar si es posible mejorar el rendimiento de los modelos de aprendizaje supervisado. La reducción de variables implica seleccionar un subconjunto de características más relevantes y eliminar las menos importantes, lo que puede simplificar el modelo y mejorar su capacidad predictiva. 
-
+En esta sección, se experimentará con la reducción de variables para evaluar si es posible mejorar el rendimiento de los modelos de aprendizaje supervisado. La reducción de variables implica seleccionar un subconjunto de características más relevantes y eliminar las menos importantes, lo que puede simplificar el modelo y mejorar su capacidad predictiva.
 
 Se procederá a realizar un estudio de la importancia de las variables para identificar cuáles son las características más relevantes en la predicción del diagnóstico de cáncer de mama y así poder seleccionar las más importantes para mejorar el rendimiento de los modelos.
 
@@ -977,10 +970,12 @@ table(data$diagnosis, data$cluster)
 
 
 ```
-     1   2
-  B 348   9
-  M  37 175
-Podemos observar que se han creado dos clusters, con 385 y 184  observaciones respectivamente. Además, se puede ver claramente que el cluster 1 contiene principalmente observaciones de la clase "B" (benigno), mientras que el cluster 2 contiene principalmente observaciones de la clase "M" (maligno). Esto sugiere que el algoritmo K-means ha sido capaz de agrupar las observaciones en función de su similitud, lo que facilita la identificación de patrones en los datos.
+
+```         
+ 1   2
+```
+
+B 348 9 M 37 175 Podemos observar que se han creado dos clusters, con 385 y 184 observaciones respectivamente. Además, se puede ver claramente que el cluster 1 contiene principalmente observaciones de la clase "B" (benigno), mientras que el cluster 2 contiene principalmente observaciones de la clase "M" (maligno). Esto sugiere que el algoritmo K-means ha sido capaz de agrupar las observaciones en función de su similitud, lo que facilita la identificación de patrones en los datos.
 
 #### 3.4.4. Clustering jerárquico
 
@@ -1039,6 +1034,7 @@ aggregate(data[data$cluster > 0, -ncol(data)],
 
 
 ```
+
 Como se puede observar, el algoritmo DBSCAN identifica 2 clusters y asigna los puntos que no pertenecen a ningún cluster como ruido. Uno de ellos con 566 por lo que no ha realizado una buena agrupación.
 
 ```{r}
@@ -1053,8 +1049,8 @@ plot(silhouette_kmeans, main = "Silueta - K-Means")
 plot(silhouette_hierarchical, main = "Silueta - Clustering Jerárquico")
 plot(silhouette_dbscan, main = "Silueta - DBSCAN")
 ```
-Como resultado de la comparación, el k-means tiene una media de anchura de silueta de 0,35, el clustering jerárquico de 0,29 y el DBSCAN de 0,35. Esto sugiere que los clusters generados por k-means y DBSCAN son más cohesivos y bien definidos en comparación con el clustering jerárquico. El DBSCAN y k-means tienen una mayor cohesión y separación entre los clusters, lo que indica que estos algoritmos son más efectivos para agrupar los datos en función de la similitud entre las observaciones.
 
+Como resultado de la comparación, el k-means tiene una media de anchura de silueta de 0,35, el clustering jerárquico de 0,29 y el DBSCAN de 0,35. Esto sugiere que los clusters generados por k-means y DBSCAN son más cohesivos y bien definidos en comparación con el clustering jerárquico. El DBSCAN y k-means tienen una mayor cohesión y separación entre los clusters, lo que indica que estos algoritmos son más efectivos para agrupar los datos en función de la similitud entre las observaciones.
 
 El siguiente paso en nuestro análisis no supervisado es aplicar el Análisis de Componentes Principales (PCA). Esta técnica permitirá visualizar la estructura de los datos, así como validar los resultados obtenidos a través del clustering.
 
@@ -1072,11 +1068,9 @@ data_pca <- as.data.frame(pca_model$x[, 1:num_components])
 
 ```
 
-
 #### 3.4.5. Reducción de dimensionalidad con t-SNE
 
 t-distributed Stochastic Neighbor Embedding es una técnica no supervisada de reducción no lineal de la dimensionalidad para la exploración de datos y la visualización de datos de alta dimensión:
-
 
 ```{r}
 
@@ -1086,7 +1080,6 @@ data_tsne <- as.data.frame(tsne_model$Y)
 colnames(data_tsne) <- c("Dim1", "Dim2")
 
 ```
-
 
 #### 3.4.6. Clustering en los Datasets Reducidos
 
@@ -1106,9 +1099,7 @@ ggplot(data_pca, aes(x = PC1, y = PC2, color = as.factor(cluster))) +
 
 ```
 
-
 #### 3.4.6.2 K-means con t-SNE
-
 
 ```{r}
 kmeans_tsne <- kmeans(data_tsne, centers = optimal_clusters, nstart = 25)
@@ -1121,7 +1112,6 @@ ggplot(data_tsne, aes(x = Dim1, y = Dim2, color = as.factor(cluster))) +
   labs(title = "Clustering K-means (t-SNE)")
 
 ```
-
 
 #### 3.4.6.3 Comparación de Resultados
 
@@ -1140,21 +1130,19 @@ ggplot(data_tsne, aes(x = Dim1, y = Dim2, color = as.factor(cluster))) +
 
 ```
 
-
 Se visualizan claramente dos clústeres.
 
 Los clusters están bien definidos y separados espacialmente.
 
 Existe un grado menor de solapamiento entre los clusters, lo que sugiere que las variables originales ofrecen una separación más clara entre las clases en este espacio.
 
-
 #### 3.4.6.4 Índice Silouhette
 
 Para visualizar mejor la comparación de ello vamos a usar el Silhouette Score, una métrica utilzada para evaluar la calidad de los clusters. El valor oscila entre -1 y 1, donde:
 
-- Un valor cercano a 1 indica que los puntos están bien agrupados.
-- Un valor cercano a 0 indica que los puntos están en la frontera, es decir, el agrupamiento resulta ambiguo.
-- Un valor cercano a -1 sugiere que los puntos podrían haber sido asignados al cluster incorrecto, es decir, el modelo no logró agruparlos adecuadamente. 
+-   Un valor cercano a 1 indica que los puntos están bien agrupados.
+-   Un valor cercano a 0 indica que los puntos están en la frontera, es decir, el agrupamiento resulta ambiguo.
+-   Un valor cercano a -1 sugiere que los puntos podrían haber sido asignados al cluster incorrecto, es decir, el modelo no logró agruparlos adecuadamente.
 
 ```{r}
 # Silhouette para clustering con PCA
@@ -1169,14 +1157,8 @@ cat("Silhouette Score - PCA:", silhouette_pca, "\n")
 cat("Silhouette Score - t-SNE:", silhouette_tsne, "\n")
 
 ```
-Silhouette Score - Sin reducción: 0.3482031 
-Silhouette Score - PCA: 0.3678096 
-Silhouette Score - t-SNE: 0.5216206 
-El Silhouette Score sin reducción es 0.34, lo que indica una media calidad de los clusters. Un valor cercano a 0.7 es generalmente considerado como un indicador de que el modelo está logrando una buena separación entre los clusters y que los puntos dentro de cada cluster son bastante similares entre sí.
-El Silhouette Score después de realizar PCA es 0.36, lo que indica una mejora en la calidad de los clusters en comparación con los datos originales. Esto sugiere que la reducción de dimensionalidad ha permitido una mejor separación de los clusters y una mayor cohesión dentro de cada cluster.
-El Silhouette Score después de realizar t-SNE es 0.52, lo que indica una mejora significativa en la calidad de los clusters en comparación con los datos originales y con la reducción de dimensionalidad mediante PCA. Esto sugiere que t-SNE ha logrado una mejor separación de los clusters y una mayor cohesión dentro de cada cluster.
 
-
+Silhouette Score - Sin reducción: 0.3482031 Silhouette Score - PCA: 0.3678096 Silhouette Score - t-SNE: 0.5216206 El Silhouette Score sin reducción es 0.34, lo que indica una media calidad de los clusters. Un valor cercano a 0.7 es generalmente considerado como un indicador de que el modelo está logrando una buena separación entre los clusters y que los puntos dentro de cada cluster son bastante similares entre sí. El Silhouette Score después de realizar PCA es 0.36, lo que indica una mejora en la calidad de los clusters en comparación con los datos originales. Esto sugiere que la reducción de dimensionalidad ha permitido una mejor separación de los clusters y una mayor cohesión dentro de cada cluster. El Silhouette Score después de realizar t-SNE es 0.52, lo que indica una mejora significativa en la calidad de los clusters en comparación con los datos originales y con la reducción de dimensionalidad mediante PCA. Esto sugiere que t-SNE ha logrado una mejor separación de los clusters y una mayor cohesión dentro de cada cluster.
 
 El siguiente algoritmo utilizado en el análisis no supervisado es el Apriori para reglas de asociación.
 
@@ -1195,7 +1177,6 @@ Se utilizará el Algoritmo Apriori para obtener las reglas de asociación, ya qu
 1.  Primero, se generan todos los itemsets con un único ítem. Luego, estos itemsets se combinan para formar itemsets con dos elementos, y así sucesivamente. Se seleccionarán únicamente los pares cuyo soporte sea mayor o igual a un umbral minsup, eliminando aquellos que no cumplan con este criterio.
 
 Se instalará el paquete necesario (arules), que es un paquete en R que proporciona funcionalidades para trabajar con reglas de asociación.
-
 
 2.  Se cargan los datos como transacciones en el formato `basket`, interpretando cada transacción como un conjunto de ítems (basket). Esto permite manejar tanto datos categóricos (como diagnosis) como continuos (los otros atributos) en la misma transacción.
 
@@ -1222,7 +1203,7 @@ inspect(filtradas)
 
 ```
 
-Como se puede observar, se ha generado una regla de asociación con un soporte del 2.28%, una confianza del 100% y un lift de 1.59. 
+Como se puede observar, se ha generado una regla de asociación con un soporte del 2.28%, una confianza del 100% y un lift de 1.59.
 
 No se ha conseguido encontrar reglas de asociación significativas con los datos reducidos. Esto puede deberse a la falta de variabilidad en los datos o a la reducción de variables, lo que limita la capacidad del algoritmo para encontrar relaciones significativas entre los ítems.
 
@@ -1237,12 +1218,7 @@ plot(filtradas, method = "graph")
 
 ```
 
-
-
-
-
 ### 4. Conclusiones
-
 
 Hemos llevado a cabo un análisis exhaustivo del conjunto de datos de cáncer de mama, explorando tanto modelos de aprendizaje supervisado como no supervisado y la identificación de reglas de asociación. Los modelos Random Forest y SVM destacaron por su rendimiento excepcional, logrando altas puntuaciones de AUC y sensibilidad. Las variables más importantes para predecir el cáncer de mama fueron "perimeter_worst", "area_worst" y "concave.points_worst". La eliminación de variables menos importantes no afectó significativamente el desempeño de los modelos, lo que sugiere que estas variables no aportaban información relevante ni introducían ruido, permitiendo modelos más eficientes y menos propensos al sobreajuste. En el aprendizaje no supervisado, el clustering sin reducción de dimensionalidad proporcionó la mejor separación entre clusters, con un Silhouette Score más alto de 0.68. Sin embargo, la PCA redujo significativamente la calidad del clustering al eliminar componentes clave. t-SNE mostró una calidad intermedia (0.54) en comparación con el espacio original de las variables, destacando su utilidad para la visualización pero limitando la preservación de la estructura del clustering. Este análisis subraya la importancia de emplear diversas técnicas de análisis de datos para obtener una comprensión completa de los patrones y relaciones en los datos de cáncer de mama.
 
