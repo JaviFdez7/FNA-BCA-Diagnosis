@@ -105,6 +105,8 @@ Se instalan los paquetes que serán necesarios durante el proyecto:
 #install.packages("ggcorrplot")
 #install.packages("car")
 #install.packages("pROC")
+#install.packages("flextable")
+
 library(tidyverse)
 library(caret)
 library(DataExplorer)
@@ -116,6 +118,7 @@ library(corrplot)
 library(ggcorrplot)
 library(pROC)
 library(car)
+library(flextable)
 ```
 
 #### 3.1.2. Carga y visualización de datos
@@ -665,6 +668,8 @@ plot(importance_nn, main = "Importancia de Variables - Red Neuronal")
 
 Al igual que en los modelos anteriores, las variables relacionadas con el tamaño y la forma del tumor, como el radio, el área y el perímetro, parecen ser las más influyentes en la predicción del diagnóstico de cáncer de mama.
 
+#### 3.3.2 Normalización de Variables
+
 Para **normalizar la importancia** y poder compararla entre modelos, se debe calcular la **importancia relativa** de cada variable en términos de contribución a la predicción del modelo. Esto permite **estandarizar las mediciones** y hacerlas comparables, independientemente del modelo o del algoritmo usado. Luego, se calcula una **métrica consolidada** que represente la **importancia promedio** de las variables en todos los modelos. Este valor consolidado se obtiene al promediar las **importancias individuales** de cada variable entre los diferentes modelos. Por último, se identifican las **variables con menor impacto** en todos los modelos al analizar aquellas que tienen una importancia **significativamente baja** en comparación con otras.
 
 ```{r}
@@ -682,7 +687,7 @@ importance_combined <- merge(importance_combined, importance_nn_df, by = "variab
 importance_combined$mean_importance <- rowMeans(importance_combined[, -1], na.rm = TRUE)
 
 # Seleccionar las menos importantes (por debajo de un umbral, por ejemplo, el percentil 20)
-threshold <- quantile(importance_combined$mean_importance, 0.2)
+threshold <- quantile(importance_combined$mean_importance, 0.9)
 least_important_vars <- importance_combined$variable[importance_combined$mean_importance <= threshold]
 
 # Eliminar estas variables del dataset original
@@ -706,7 +711,7 @@ print(dim(data_reduced))
 
 Como se puede observar, las variables menos importantes en los modelos evaluados son "symmetry_se", "fractal_dimension_se", "texture_se", "smoothness_se" y "fractal_dimension_mean". Estas variables tienen una baja contribución a la predicción del diagnóstico en comparación con otras características más relevantes, como el tamaño y la forma del tumor. El dataset reducido contiene 25 variables.
 
-#### 3.3.2. Entrenamiento de Modelos con Dataset Reducido
+#### 3.3.3. Entrenamiento de Modelos con Dataset Reducido
 
 El siguiente paso será repetir el análisis supervisado esta vez usando el dataset reducido en el que no aparecen las columnas "menos importantes". De esta forma podremos analizar si los resultados mejorar, empeoran o no afectan con el estudio de importancia de varianles:
 
@@ -791,7 +796,7 @@ model_nn_reduced <- train(
 
 ```
 
-#### 3.3.3. Comparación de resultados análisis supervisado dataset incial vs dataset reducido:
+#### 3.3.4. Comparación de resultados análisis supervisado dataset incial vs dataset reducido:
 
 A continuación, se compararán los resultados de los modelos entrenados con el dataset completo y el dataset reducido. Se evaluarán las métricas de rendimiento, como el área bajo la curva ROC (AUC-ROC), la sensibilidad y la especificidad, para determinar si la reducción de variables afecta el rendimiento de los modelos.
 
@@ -1075,6 +1080,14 @@ Se filtran las reglas basadas en el lift y la confianza, de modo que solo se con
 filtradas <- subset(reglasAsociacion, lift > 1.5 & confidence >= 0.8)
 inspect(filtradas)
 ```
+
+
+
+
+
+
+
+
 
 ### 4. Conclusiones
 
