@@ -796,7 +796,7 @@ model_nn_reduced <- train(
 
 ```
 
-#### 3.3.4. Comparación de resultados análisis supervisado dataset incial vs dataset reducido:
+#### 3.3.4. Comparación de resultados del análisis supervisado: dataset incial vs dataset reducido.
 
 A continuación, se compararán los resultados de los modelos entrenados con el dataset completo y el dataset reducido. Se evaluarán las métricas de rendimiento, como el área bajo la curva ROC (AUC-ROC), la sensibilidad y la especificidad, para determinar si la reducción de variables afecta el rendimiento de los modelos.
 
@@ -914,6 +914,8 @@ plot(2:15, silhouette_scores[-1], type = "b", xlab = "Número de Clusters", ylab
 
 ```
 
+Puede verse de forma más clara en el puntaje de Silhouette que k será 2.
+
 El siguiente método de análisis no supervisado que se utiliza es el algoritmo K-means, el cual permite agrupar los datos en un número específico de clusters previamente determinado.
 
 #### 3.4.3. K-Means
@@ -923,7 +925,7 @@ El algoritmo K-means es una técnica de clustering que organiza los datos en K c
 ```{r}
 set.seed(123)
 
-optimal_clusters = 4
+optimal_clusters = 2
 
 kmeans_model <- kmeans(data_normalized, centers = optimal_clusters, nstart = 25)
 
@@ -941,26 +943,94 @@ aggregate(data[, -ncol(data)], by = list(cluster = data$cluster), FUN = mean)
 
 ```
 
+
+
+
 El siguiente paso en nuestro análisis no supervisado es aplicar el Análisis de Componentes Principales (PCA). Esta técnica permitirá visualizar la estructura de los datos, así como validar los resultados obtenidos a través del clustering.
 
-#### 3.4.4. PCA
+#### 3.4.4. Reducción de dimensionalidad con PCA
 
-La dimensionalidad se reducirá transformando las variables originales en componentes principales para identificar la mayor parte de la variabilidad en los datos. Esto facilita la visualización de la estructura subyacente y optimiza la interpretación de los resultados del clustering. PCA simplifica el análisis al reducir la complejidad de los datos.
+La dimensionalidad se reducirá transformando las variables originales en componentes principales para identificar la mayor parte de la variabilidad en los datos. Esto facilita la visualización de la estructura subyacente y optimiza la interpretación de los resultados del clustering. PCA simplifica el análisis al reducir la complejidad de los datos. Seleccionamos los componentes principales que expliquen al menos el 95% de la varianza acumulada.
 
 ```{r}
-# PCA
 pca_model <- prcomp(data_normalized, scale = TRUE)
+explained_variance <- cumsum(pca_model$sdev^2 / sum(pca_model$sdev^2))
+num_components <- which(explained_variance >= 0.95)[1]  # Seleccionar componentes que expliquen el 95% de la varianza
+data_pca <- as.data.frame(pca_model$x[, 1:num_components])
 
-# Visualización de los dos primeros componentes principales
-pca_data <- data.frame(pca_model$x[, 1:2], cluster = as.factor(data$cluster))
-ggplot(pca_data, aes(x = PC1, y = PC2, color = cluster)) +
-  geom_point() +
-  theme_minimal() +
-  labs(title = "Clustering visualizado en espacio PCA")
-table(data$diagnosis, data$cluster)
 
 
 ```
+
+
+#### 3.4.5. Reducción de dimensionalidad con t-SNE
+
+t-distributed Stochastic Neighbor Embedding es una técnica no supervisada de reducción no lineal de la dimensionalidad para la exploración de datos y la visualización de datos de alta dimensión:
+
+
+```{r}
+#install.packages("Rtsne")
+library(Rtsne)
+set.seed(42)
+tsne_model <- Rtsne(data_normalized, perplexity = 30, theta = 0.5, dims = 2)
+data_tsne <- as.data.frame(tsne_model$Y)
+colnames(data_tsne) <- c("Dim1", "Dim2")
+
+```
+
+
+#### 3.4.6. Clustering en los Datasets Reducidos
+
+Aplicamos K-means a los datasets generados por PCA y t-SNE, utilizando el mismo número de clusters determinado previamente.
+
+#### 3.4.6.1 K-means con PCA
+
+```{r}
+kmeans_pca <- kmeans(data_pca, centers = optimal_clusters, nstart = 25)
+data_pca$cluster <- kmeans_pca$cluster
+
+# Visualización
+ggplot(data_pca, aes(x = PC1, y = PC2, color = as.factor(cluster))) +
+  geom_point() +
+  theme_minimal() +
+  labs(title = "Clustering K-means (PCA)")
+
+```
+
+
+#### 3.4.6.2 K-means con t-SNE
+
+
+```{r}
+kmeans_tsne <- kmeans(data_tsne, centers = optimal_clusters, nstart = 25)
+data_tsne$cluster <- kmeans_tsne$cluster
+
+# Visualización
+ggplot(data_tsne, aes(x = Dim1, y = Dim2, color = as.factor(cluster))) +
+  geom_point() +
+  theme_minimal() +
+  labs(title = "Clustering K-means (t-SNE)")
+
+```
+
+
+#### 3.4.6.3 Comparación de Resultados
+
+```{r}
+# Visualización PCA
+ggplot(data_pca, aes(x = PC1, y = PC2, color = as.factor(cluster))) +
+  geom_point() +
+  theme_minimal() +
+  labs(title = "Clusters visualizados en espacio PCA")
+
+# Visualización t-SNE
+ggplot(data_tsne, aes(x = Dim1, y = Dim2, color = as.factor(cluster))) +
+  geom_point() +
+  theme_minimal() +
+  labs(title = "Clusters visualizados en espacio t-SNE")
+
+```
+
 
 Se visualizan claramente cuatro clústeres.
 
@@ -970,70 +1040,34 @@ Existe un grado menor de solapamiento entre los clusters, lo que sugiere que las
 
 En cuanto al espacio de variación, los puntos están distribuidos en coordenadas centradas, con valores que van de -15 a 5 en PC1 y de -10 a 10 en PC2.
 
-También se repetirá el clustering con el dataset reducido generado durante el estudio de la importancia de las variables.
+#### 3.4.6.4 Índice Silouhette
 
-#### 3.4.5. Análisis No Supervisado con Dataset Reducido según importancia de variables
+Para visualizar mejor la comparación de ello vamos a usar el Silhouette Score, una métrica utilzada para evaluar la calidad de los clusters. El valor oscila entre -1 y 1, donde:
 
-```{r}
-data_UnSupervised_reduced <- data_reduced %>% select(-diagnosis)
-head(data_UnSupervised_reduced)
-data_UnSupervised_reduced$diagnosis
-```
+- Un valor cercano a 1 indica que los puntos están bien agrupados.
+- Un valor cercano a 0 indica que los puntos están en la frontera, es decir, el agrupamiento resulta ambiguo.
+- Un valor cercano a -1 sugiere que los puntos podrían haber sido asignados al cluster incorrecto, es decir, el modelo no logró agruparlos adecuadamente. 
 
 ```{r}
-# Normalizar los datos (sin la variable de respuesta si existe)
-preprocess_params <- preProcess(data_UnSupervised_reduced[, -ncol(data_UnSupervised_reduced)], method = c("center", "scale"))
-data_normalized_reduced <- predict(preprocess_params, data_UnSupervised_reduced[, -ncol(data_UnSupervised_reduced)])
+# Silhouette para clustering con PCA
+silhouette_pca <- mean(silhouette(kmeans_pca$cluster, dist(data_pca))[, 3])
+
+# Silhouette para clustering con t-SNE
+silhouette_tsne <- mean(silhouette(kmeans_tsne$cluster, dist(data_tsne))[, 3])
+
+# Comparación
+cat("Silhouette Score - Sin reducción:", silhouette_scores[optimal_clusters], "\n")
+cat("Silhouette Score - PCA:", silhouette_pca, "\n")
+cat("Silhouette Score - t-SNE:", silhouette_tsne, "\n")
+
 ```
 
-```{r}
-# Método del codo
-wss <- (nrow(data_normalized_reduced) - 1) * sum(apply(data_normalized_reduced, 2, var))
-for (i in 2:15) wss[i] <- sum(kmeans(data_normalized_reduced, centers = i)$withinss)
+- El Silhouette Score sin reducción es 0.54, lo que indica una calidad moderada de los clusters. Esto sugiere que los puntos dentro de los clusters son razonablemente similares entre sí y están razonablemente separados de los puntos de otros clusters.
+Este valor sugiere que el clustering hecho en el espacio original de las variables es adecuado, pero podría mejorar.
+- El Silhouette Score después de realizar PCA es 0.34, lo cual es más bajo que el obtenido sin reducción de dimensionalidad. Esto indica que, al reducir las dimensiones a través de PCA, la calidad del clustering empeoró ligeramente.
+-El Silhouette Score después de realizar t-SNE es 0.43, que es más bajo que el valor sin reducción pero superior al de PCA. Aunque t-SNE está diseñado principalmente para la visualización de datos, no optimiza el agrupamiento como tal, lo que puede haber causado que los resultados del clustering fueran menos eficientes.
 
-plot(1:15, wss, type = "b", xlab = "Número de Clusters", ylab = "Suma de Cuadrados Internos")
 
-# Índice silhouette
-library(cluster)
-silhouette_scores <- numeric()
-for (i in 2:15) {
-  km <- kmeans(data_normalized_reduced, centers = i)
-  silhouette_scores[i] <- mean(silhouette(km$cluster, dist(data_normalized_reduced))[, 3])
-}
-plot(2:15, silhouette_scores[-1], type = "b", xlab = "Número de Clusters", ylab = "Puntaje de Silhouette")
-```
-
-k-means
-
-```{r}
-set.seed(123)
-
-optimal_clusters_2 = 5
-
-kmeans_model_reduced <- kmeans(data_normalized_reduced, centers = optimal_clusters_2, nstart = 25)
-
-# Agregar etiquetas de cluster al dataset original
-data_reduced$cluster <- kmeans_model_reduced$cluster
-```
-
-```{r}
-# PCA
-pca_model_reduced <- prcomp(data_normalized_reduced, scale = TRUE)
-
-# Visualización de los dos primeros componentes principales
-library(ggplot2)
-pca_data_reduced <- data.frame(pca_model_reduced$x[, 1:2], cluster = as.factor(data_reduced$cluster))
-ggplot(pca_data_reduced, aes(x = PC1, y = PC2, color = cluster)) +
-  geom_point() +
-  theme_minimal() +
-  labs(title = "Clustering visualizado en espacio PCA")
-```
-
-En este caso, se visualizan cinco clusters, lo que podría indicar una mayor sensibilidad del modelo al agrupar los datos reducidos. Los clusters están más compactos en el centro del gráfico, con menos separación clara en comparación con la versión completa. Además, hay clústeres adicionales (como el cluster 5, representado en rosa), lo que podría indicar una partición más forzada o una sensibilidad al ruido.
-
-Existe un mayor solapamiento entre los clusters en comparación con el gráfico sin reducción de datos. El rango del eje PC1 varía de -5 a 15, mientras que PC2 tiene una distribución de -5 a 15, lo que sugiere un cambio en la importancia relativa de los componentes principales después de la reducción de variables.
-
-En conclusión, sin reducción, los clusters son más definidos y separados, lo que sugiere que las variables eliminadas contienen información relevante para distinguir los grupos. Con reducción, los clusters muestran mayor solapamiento y parecen menos definidos, posiblemente debido a la pérdida de información al reducir las variables. La aparición de un quinto cluster en el conjunto reducido indica que la reducción puede introducir sensibilidad al ruido o revelar patrones más complejos (aunque menos significativos).
 
 El siguiente algoritmo utilizado en el análisis no supervisado es el Apriori para reglas de asociación.
 
@@ -1082,8 +1116,17 @@ inspect(filtradas)
 ```
 
 
+#### 3.4.6.1 Visualización de las Reglas de Asociación:
 
+```{r}
+# Instalar el paquete de visualización
+# install.packages("arulesViz")
+library(arulesViz)
 
+# Visualizar las reglas
+plot(filtradas, method = "graph")
+
+```
 
 
 
