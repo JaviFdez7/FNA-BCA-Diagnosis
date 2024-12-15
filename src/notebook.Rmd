@@ -23,7 +23,7 @@ output: html_notebook
 
 ## Resumen
 
-Este proyecto tiene como objetivo la aplicación de técnicas de aprendizaje supervisado y no supervisado para el diagnóstico de cáncer de mama, utilizando un conjunto de datos que contiene características extraídas de imágenes de aspirado con aguja fina (FNA) de masas mamarias. El conjunto de datos contiene 569 muestras, con 357 benignas y 212 malignas, y 33 características que describen diversas propiedades de los núcleos celulares en las imágenes. En este estudio, se explorarán varios enfoques de clasificación supervisada, como **CART**, **Random Forest** y **SVM**, para predecir el diagnóstico de las muestras, además de aplicar técnicas no supervisadas como el **clustering** y la **reducción de dimensionalidad** a través de **PCA**. Se espera que el análisis combinado de ambos enfoques permita mejorar la precisión en el diagnóstico y proporcionar una mejor comprensión de los patrones subyacentes en los datos. **Se discutirán los resultados obtenidos y se presentarán conclusiones sobre la efectividad de las técnicas empleadas.**
+  Este proyecto tiene como objetivo la aplicación de técnicas de aprendizaje supervisado y no supervisado para el diagnóstico de cáncer de mama, utilizando un conjunto de datos que contiene características extraídas de imágenes de aspirado con aguja fina (FNA) de masas mamarias. El conjunto de datos contiene 569 muestras, con 357 benignas y 212 malignas, y 33 características que describen diversas propiedades de los núcleos celulares en las imágenes. En este estudio, se explorarán varios enfoques de clasificación supervisada, como **CART**, **Random Forest**, **SVM**, **Regresión logística** y **redes neuronales** para predecir el diagnóstico de las muestras, además de aplicar técnicas no supervisadas como el **clustering** y la **reducción de dimensionalidad** a través de **PCA** y **T-SNE**. Se espera que el análisis combinado de ambos enfoques permita mejorar la precisión en el diagnóstico y proporcionar una mejor comprensión de los patrones subyacentes en los datos. **Se discutirán los resultados obtenidos y se presentarán conclusiones sobre la efectividad de las técnicas empleadas.**
 
 ## 1. Introducción
 
@@ -41,7 +41,21 @@ En la **Figura 1** se ilustra el procedimiento de aspiración con aguja fina (FN
 <img src="images/cells.jpg" alt="Células extraídas de FNA" style="width: 35%;"/> <br> <b>Figura 2:</b><i> Células extraídas de FNA</i>
 :::
 
-El conjunto de datos incluye 33 características, como el radio, la textura, el perímetro y la simetría de los núcleos celulares, las cuales se utilizan para determinar si una muestra es **benigna** o **maligna**. El análisis se centra en la aplicación de técnicas de aprendizaje supervisado, como **CART**, **Random Forest** y **SVM**, para predecir el diagnóstico basado en las características numéricas. Además, se aplicarán técnicas de aprendizaje no supervisado, como el **clustering** y la **reducción de dimensionalidad** mediante **PCA** , para explorar los patrones ocultos en los datos y posiblemente mejorar la precisión de los modelos.
+El conjunto de datos incluye 33 características, como el radio, la textura, el perímetro y la simetría de los núcleos celulares, las cuales se utilizan para determinar si una muestra es **benigna** o **maligna**.  
+
+Estas características se pueden agrupar en:  
+
+**Relacionadas con el tamaño**  
+Incluyen medidas que describen el tamaño y la extensión de los núcleos celulares. El **radio** mide el tamaño de la circunferencia y se reporta como la media (`radius_mean`), el peor caso (`radius_worst`) y la desviación estándar (`radius_se`). El **perímetro** indica la longitud alrededor del núcleo, reportado de manera similar como media (`perimeter_mean`), peor caso (`perimeter_worst`) y desviación estándar (`perimeter_se`). Por último, el **área** representa el espacio ocupado por el núcleo, también dividido en media (`area_mean`), peor caso (`area_worst`) y desviación estándar (`area_se`).  
+
+**Relacionadas con la forma**  
+Estas variables describen características geométricas de los núcleos, enfocándose en irregularidades en su borde. La **suavidad** mide la regularidad de los bordes (`smoothness_mean`, `smoothness_worst`, `smoothness_se`), mientras que la **compacidad** evalúa qué tan redonda es la forma del núcleo (`compactness_mean`, `compactness_worst`, `compactness_se`). La **concavidad** mide el grado de hundimiento en los bordes (`concavity_mean`, `concavity_worst`, `concavity_se`) y los **puntos cóncavos** representan el número de puntos específicos donde estos hundimientos son evidentes (`concave points_mean`, `concave points_worst`, `concave points_se`).  
+
+**Relacionadas con la textura y fractales**  
+Estas características están asociadas a la apariencia y complejidad de la imagen de los núcleos celulares. La **textura** mide la variación en la intensidad de los píxeles y se reporta como media (`texture_mean`), peor caso (`texture_worst`) y desviación estándar (`texture_se`). Por su parte, la **dimensión fractal** describe la irregularidad del borde de los núcleos celulares y también se mide como media (`fractal_dimension_mean`), peor caso (`fractal_dimension_worst`) y desviación estándar (`fractal_dimension_se`).  
+
+
+El análisis se centra en la aplicación de técnicas de aprendizaje supervisado, como **CART**, **Random Forest** y **SVM**, para predecir el diagnóstico basado en las características numéricas. Además, se aplicarán técnicas de aprendizaje no supervisado, como el **clustering** y la **reducción de dimensionalidad** mediante **PCA** , para explorar los patrones ocultos en los datos y posiblemente mejorar la precisión de los modelos.
 
 ## 2. Metodología
 
@@ -56,9 +70,9 @@ El desarrollo de este proyecto se llevará a cabo a través de un enfoque estruc
     -   **CART (Classification and Regression Trees)**: Un modelo de árbol de decisiones que permite realizar predicciones mediante una serie de reglas basadas en los datos de entrada.
     -   **Random Forest**: Un conjunto de árboles de decisión que mejora la precisión mediante el uso de técnicas de muestreo y combinación de varios modelos.
     -   **SVM (Support Vector Machine)**: Un modelo que encuentra el hiperplano óptimo que separa las clases de manera eficaz.
-    -   **GLM (Generalized Linear Model)**: Un modelo estadístico que puede adaptarse a diferentes distribuciones de las variables dependientes, como la binomial en este caso.\
+    -   **Regresión logística**: Un modelo estadístico que puede adaptarse a diferentes distribuciones de las variables dependientes, como la binomial en este caso.\
         Se evaluará la **Importancia de las Variables** en los modelos para identificar las características más influyentes en las predicciones.
-
+    -  **Redes Neuronales**: Un modelo de aprendizaje profundo que puede capturar relaciones complejas entre las variables y adaptarse a patrones no lineales en los datos.
 3.  **Experimentación con el Dataset Reducido**\
     Posteriormente, se realizará una **experimentación** en la que se modificarán las características del dataset mediante la eliminación de variables menos relevantes, basándose en la **importancia de las variables** obtenida de los modelos. Esto permitirá optimizar los modelos y reducir el sobreajuste, mejorando la capacidad de generalización del sistema de diagnóstico.
 
@@ -66,8 +80,9 @@ El desarrollo de este proyecto se llevará a cabo a través de un enfoque estruc
 
 4.  **Aplicación de Modelos No Supervisados**\
     Para explorar los patrones subyacentes en los datos sin utilizar etiquetas de clase, se implementarán **modelos no supervisados**. Estos incluirán:
-    -   **Clustering**: Se utilizarán técnicas como **K-means** para agrupar las observaciones de acuerdo con similitudes en sus características. Esto permitirá identificar posibles grupos de datos que podrían no haber sido evidentes en la clasificación supervisada.
-    -   **Reducción de Dimensionalidad**: Para reducir el número de variables y simplificar el análisis, se emplearán técnicas como **PCA (Principal Component Analysis)**. Estas técnicas ayudarán a descubrir las estructuras latentes en los datos y facilitarán la visualización y el análisis posterior.
+    -   **Clustering**: En primer lugar se buscará el número de clusters con el **método del codo** y **silhouette** Se utilizarán técnicas como **K-means**,**Clustering jerárquico** o **DBSCAN** para agrupar las observaciones de acuerdo con similitudes en sus características. Esto permitirá identificar posibles grupos de datos que podrían no haber sido evidentes en la clasificación supervisada.
+    -   **Reducción de Dimensionalidad**: Para reducir el número de variables y simplificar el análisis, se emplearán técnicas como **PCA (Principal Component Analysis) y T-SNE**. Estas técnicas ayudarán a descubrir las estructuras latentes en los datos y facilitarán la visualización y el análisis posterior.
+    -   **Algoritmo a priori**: Se aplicará el algoritmo **a priori** para identificar reglas de asociación entre las características del dataset. Esto permitirá descubrir patrones interesantes y relaciones ocultas entre las variables.
 5.  **Presentación de los Resultados y Conclusiones**\
     Finalmente, se presentarán los **resultados** obtenidos de los modelos evaluados, incluyendo tablas, gráficos y análisis comparativos. En esta sección se discutirá la efectividad de las técnicas empleadas, destacando los modelos más precisos y los enfoques que mejor se ajustan a las necesidades del diagnóstico de cáncer de mama. Las **conclusiones** se centrarán en la viabilidad y los posibles pasos a seguir para mejorar el rendimiento del modelo y su aplicabilidad en un entorno clínico.
 
@@ -94,19 +109,27 @@ Se instalan los paquetes que serán necesarios durante el proyecto:
 ```{r setup, warning=FALSE, message=FALSE}
 # Nota: Descomentar las líneas de instalación si no se tienen los paquetes instalados. Comando ctrl+shift+c para descomentar.
 
-#install.packages("tidyverse")
-#install.packages("caret")
-#install.packages("DataExplorer")
-#install.packages("dplyr")
-#install.packages("ggplot2")
-#install.packages("lattice")
-#install.packages("psych")
-#install.packages("corrplot")
-#install.packages("ggcorrplot")
-#install.packages("car")
-#install.packages("pROC")
-#install.packages("flextable")
+# install.packages("tidyverse")
+# install.packages("caret")
+# install.packages("DataExplorer")
+# install.packages("dplyr")
+# install.packages("ggplot2")
+# install.packages("lattice")
+# install.packages("psych")
+# install.packages("corrplot")
+# install.packages("ggcorrplot")
+# install.packages("car")
+# install.packages("pROC")
+# install.packages("flextable")
+# install.packages("kernlab")
+# install.packages("cluster")
+# install.packages("dbscan")
+# install.packages("Rtsne")
+# install.packages("arules")
+# install.packages("arulesViz")
+```
 
+```{r}
 library(tidyverse)
 library(caret)
 library(DataExplorer)
@@ -119,6 +142,12 @@ library(ggcorrplot)
 library(pROC)
 library(car)
 library(flextable)
+library(kernlab)
+library(cluster)
+library(dbscan)
+library(Rtsne)
+library(arules)
+library(arulesViz)
 ```
 
 #### 3.1.2. Carga y visualización de datos
@@ -139,7 +168,7 @@ dim <- dim(data)
 cat("Número de columnas:", dim[2], "\n")
 cat("Número de filas:", dim[1], "\n")
 ```
-Como podemos observar, nuestro dataset cuenta con 569 filas y 33 columnas.
+Como se puede observar, el dataset cuenta con 569 filas y 33 columnas.
 
 
 A continuación, se muestra la estructura, tipos y algunos ejemplos de las variables del dataset para tener una visión global del las distintas variables con las que se cuenta.
@@ -348,10 +377,10 @@ Las variables menos correlacionadas con **'diagnosis'** son **symmetry_se** (-0.
 ##### 3.1.4.4. Selección de Atributos
 
 La selección de atributos se refiere al proceso de identificar y elegir las variables más relevantes para un análisis, descartando las redundantes o irrelevantes para mejorar la calidad y eficiencia del modelo. En este caso, dado que algunas variables en el dataset muestran altas correlaciones entre sí, se podría considerar eliminarlas para reducir la dimensionalidad y simplificar el análisis.
-88
+
 A pesar de las correlaciones fuertes entre ciertas variables, ninguna es mayor de 0,8-0.9 por lo que eliminarlas podría no ser adecuado ya que el conjunto de datos es limitado. La eliminación de variables podría llevar a una pérdida significativa de información valiosa que podría ser crucial para el análisis y las predicciones. Mantener todas las variables como "area_mean" o "perimeter_mean" aporta información única y valiosa al modelo, lo que permite capturar un panorama más completo del tumor.
 
-Por lo tanto, se optará por mantener todas las variables.
+Por lo tanto, se optará por mantener todas las variables. Aún así, en la experimentación con los modelos se evaluará si la eliminación de algunas variables redundantes o irrelevantes puede mejorar la precisión y la eficiencia del modelo.
 
 ### 3.2. Análisis Supervisado.
 
@@ -361,7 +390,7 @@ A medida que se introducen datos en el modelo, este ajusta sus ponderaciones ite
 
 En este análisis, la variable a predecir será "diagnosis", que como se mencionó previamente, es binaria: 1 si el tumor es maligno y 0 si es benigno.
 
-Se evaluaron diferentes modelos de clasificación para un conjunto de datos con 569 muestras y 30 variables, categorizados en 'Benigno' y 'Maligno'. Los modelos analizados incluyen el Árbol de Decisión (CART), Random Forest (Bosque Aleatorio), Máquinas de Soporte Vectorial con núcleo Radial (SVM), Modelo Lineal Generalizado (GLM) y un clasificador con redes neuronales.
+Se evaluaron diferentes modelos de clasificación para un conjunto de datos con 569 muestras y 30 variables, categorizados en 'Benigno' y 'Maligno'. Los modelos analizados incluyen el Árbol de Decisión (CART), Random Forest (Bosque Aleatorio), Máquinas de Soporte Vectorial con núcleo Radial (SVM), Regresión logística y un clasificador con redes neuronales.
 
 El primer paso en el análisis supervisado es realizar la división del dataset.
 
@@ -507,8 +536,7 @@ Random Forest, muestra un desempeño destacable. Este modelo seleccionó el valo
 El Support Vector Machine (SVM) es un algoritmo que intenta encontrar el hiperplano que mejor separe las diferentes clases de datos.
 
 ```{r}
-#install.packages("kernlab")
-library(kernlab)
+
 
 model_svm <- train(
   diagnosis ~ .,        # Usamos todas las variables predictoras
@@ -555,13 +583,13 @@ importance_logit_df$variable <- rownames(importance_logit_df)
 
 ```
 
-El último modelo considerado es el Modelo Lineal Generalizado (GLM). Este modelo, a pesar de ser sencillo en su estructura, mostró un rendimiento respetable. Su curva ROC alcanzó un valor de 0.9552, lo cual es inferior a los de Random Forest y SVM, pero sigue siendo adecuado para tareas de clasificación. La sensibilidad de 0.9438 indica que el modelo tiene una buena capacidad para identificar las observaciones positivas, mientras que la especificidad de 0.9484 es ligeramente mejor que la sensibilidad, lo que sugiere que el modelo tiene un desempeño ligeramente mejor para detectar las observaciones negativas en comparación con las positivas. Aunque el modelo GLM es funcional, su rendimiento en términos de la curva ROC es algo inferior en comparación con los modelos más complejos como SVM y Random Forest.
+El último modelo considerado es el Modelo de regresión Logística. Este modelo, a pesar de ser sencillo en su estructura, mostró un rendimiento respetable. Su curva ROC alcanzó un valor de 0.9552, lo cual es inferior a los de Random Forest y SVM, pero sigue siendo adecuado para tareas de clasificación. La sensibilidad de 0.9438 indica que el modelo tiene una buena capacidad para identificar las observaciones positivas, mientras que la especificidad de 0.9484 es ligeramente mejor que la sensibilidad, lo que sugiere que el modelo tiene un desempeño ligeramente mejor para detectar las observaciones negativas en comparación con las positivas. Aunque el modelo de regresión Logística es funcional, su rendimiento en términos de la curva ROC es algo inferior en comparación con los modelos más complejos como SVM y Random Forest.
 
 #### 3.2.6. Red Neuronal
 
 Las redes neuronales son un modelo de aprendizaje profundo que imita el funcionamiento del cerebro humano. Están compuestas por capas de neuronas interconectadas que procesan la información y aprenden a partir de los datos. Puede ser interesante evaluar el rendimiento de una red neuronal en comparación con los modelos tradicionales de aprendizaje supervisado.
 
-```{r}
+```{r warning=FALSE, message=FALSE}
 # Entrenar una red neuronal para clasificación binaria
 model_nn <- train(
   diagnosis ~ .,        # Usamos todas las variables predictoras
@@ -571,7 +599,9 @@ model_nn <- train(
   metric = "ROC",       # Evaluar utilizando AUC (Área bajo la curva ROC)
   verbose = FALSE       # Suprimir los detalles del entrenamiento
 )
+```
 
+```{r}
 
 # Imprimir los resultados del modelo
 print(model_nn$results)
@@ -584,6 +614,9 @@ importance_nn_df$variable <- rownames(importance_nn_df)
 
 
 ```
+
+El modelo de Red Neuronal, tiene un rendimiento muy similar al de Random Forest y SVM, con una curva ROC de 0.9922, una sensibilidad de 0.9551 y una especificidad de 0.9431. Esto indica que la red neuronal es capaz de discriminar eficazmente entre las clases 'Beningno' y 'Maligno', con una alta capacidad para detectar las observaciones positivas y negativas. Aunque la red neuronal es un modelo más complejo y requiere más tiempo de entrenamiento, su rendimiento es comparable al de los modelos más tradicionales, lo que sugiere que puede ser una opción viable para la clasificación de tumores de mama.
+
 #### 3.2.7 Evaluación de los modelos
 
 Esta sección se dedica a evaluar el rendimiento de los modelos utilizados en el análisis. La comparación de modelos se realiza utilizando técnicas de validación cruzada, como K-fold, para obtener una visión robusta del desempeño de cada uno. Los resultados obtenidos de estos modelos se comparan a través del resumen de resampling y se visualizan mediante el diagrama bwplot para identificar cuál modelo ofrece mejor precisión y generalización en las predicciones.
@@ -617,7 +650,7 @@ El objetivo del estudio de importancia de variables es eliminar aquellas que con
 
 ##### 3.3.1.1. Árbol de Decisión (CART)
 
-En los árboles de decisión, la importancia de vairables se calcula en función de las ganancias de reducción de impureza, por ejemplo, la reducción de la entropía o del índice Gini en los nodos donde la variables es utilizada para dividr los datos.
+En los árboles de decisión, la importancia de variables se calcula en función de las ganancias de reducción de impureza, por ejemplo, la reducción de la entropía o del índice Gini en los nodos donde la variables es utilizada para dividr los datos.
 
 ```{r}
 plot(importance_cart, main = "Importancia de Variables - CART")
@@ -653,7 +686,7 @@ Al igual que en los modelos anteriores, parece que las variables de peor y media
 En regresión logística, la importancia de variables se puede analizar mediante los coeficientes estimados del modelo. Estos coeficientes indican la magnitud y la dirección del efecto de cada variable en la probabilidad de que un tumor sea maligno.
 
 ```{r}
-plot(importance_logit, main = "Importancia de Variables - GLM")
+plot(importance_logit, main = "Importancia de Variables - Regresión Logística")
 ```
 
 En este caso la simetría toma un papel importante en la predicción del diagnóstico de cáncer de mama.
@@ -686,7 +719,7 @@ importance_combined <- merge(importance_combined, importance_nn_df, by = "variab
 # Promedio de importancia
 importance_combined$mean_importance <- rowMeans(importance_combined[, -1], na.rm = TRUE)
 
-# Seleccionar las menos importantes (por debajo de un umbral, por ejemplo, el percentil 20)
+# Seleccionar las menos importantes (por debajo de un umbral, por ejemplo, el percentil 90)
 threshold <- quantile(importance_combined$mean_importance, 0.9)
 least_important_vars <- importance_combined$variable[importance_combined$mean_importance <= threshold]
 
@@ -709,11 +742,11 @@ print(dim(data_reduced))
 
 ```
 
-Como se puede observar, las variables menos importantes en los modelos evaluados son "symmetry_se", "fractal_dimension_se", "texture_se", "smoothness_se" y "fractal_dimension_mean". Estas variables tienen una baja contribución a la predicción del diagnóstico en comparación con otras características más relevantes, como el tamaño y la forma del tumor. El dataset reducido contiene 25 variables.
+Como se puede observar, las variables menos importantes en los modelos evaluados son "symmetry_se", "fractal_dimension_se", "texture_se", "smoothness_se" y "fractal_dimension_mean". Estas variables tienen una baja contribución a la predicción del diagnóstico en comparación con otras características más relevantes, como el tamaño y la forma del tumor. El dataset reducido contiene 3 variables ("perimeter_worst","area_worst","concave.points_worst")
 
 #### 3.3.3. Entrenamiento de Modelos con Dataset Reducido
 
-El siguiente paso será repetir el análisis supervisado esta vez usando el dataset reducido en el que no aparecen las columnas "menos importantes". De esta forma podremos analizar si los resultados mejorar, empeoran o no afectan con el estudio de importancia de varianles:
+El siguiente paso será repetir el análisis supervisado esta vez usando el dataset reducido en el que no aparecen las columnas "menos importantes". De esta forma se analiza si los resultados mejorar, empeoran o no afectan con el estudio de importancia de varianles:
 
 **Árbol de Decisión (CART)**
 
@@ -750,8 +783,6 @@ print(model_rf_reduced)
 **Support Vector Machine (SVM)**
 
 ```{r}
-#install.packages("kernlab")
-library(kernlab)
 
 model_svm_reduced <- train(
   diagnosis ~ .,        # Usamos todas las variables predictoras
@@ -861,6 +892,8 @@ Como se puede ver en la tabla, que muestra el cambio relativo en las métricas d
 
 Como los modelos no mejoran ni empeoran significativamente con la reducción de variables, se puede concluir que el dataset original contiene información redundante o poco relevante para la predicción del diagnóstico. Además, ahora es un proceso más eficiente y menos costoso computacionalmente, ya que se trabaja con un número menor de variables.
 
+Las 3 variables más importantes para predecir el cáncer de mama son: "perimeter_worst","area_worst","concave.points_worst". Ya que se consigue un resultado equivalente con un menor número de variables, los modelos son más eficientes y menos propensos al sobreajuste.
+
 ### 3.4. Análisis No Supervisado.
 
 El análisis no supervisado tiene como objetivo identificar patrones ocultos o estructuras presentes en los datos sin requerir etiquetas. Para este propósito, se emplean técnicas de clustering y reducción de dimensionalidad que permiten explorar la información contenida en las características de las células. Estas técnicas facilitan la identificación de grupos de observaciones similares y proporcionan una perspectiva más clara sobre las relaciones entre las variables.
@@ -904,7 +937,7 @@ for (i in 2:15) wss[i] <- sum(kmeans(data_normalized, centers = i)$withinss)
 plot(1:15, wss, type = "b", xlab = "Número de Clusters", ylab = "Suma de Cuadrados Internos")
 
 # Índice silhouette
-library(cluster)
+
 silhouette_scores <- numeric()
 for (i in 2:15) {
   km <- kmeans(data_normalized, centers = i)
@@ -920,7 +953,7 @@ El siguiente método de análisis no supervisado que se utiliza es el algoritmo 
 
 #### 3.4.3. K-Means
 
-El algoritmo K-means es una técnica de clustering que organiza los datos en K clusters, con el objetivo de minimizar la varianza dentro de cada grupo. Aunque se trata de un método ampliamente utilizado, la interpretación de los resultados debe realizarse con cautela, ya que el número de clusters es sensible tanto a la inicialización como a la distribución de los datos.
+El algoritmo K-means es una técnica de clustering que organiza los datos en K clusters, con el objetivo de minimizar la varianza dentro de cada grupo.
 
 ```{r}
 set.seed(123)
@@ -940,10 +973,87 @@ table(data$cluster)
 # Resumen de los datos agrupados por cluster
 aggregate(data[, -ncol(data)], by = list(cluster = data$cluster), FUN = mean)
 
+table(data$diagnosis, data$cluster)
+
 
 ```
+     1   2
+  B 348   9
+  M  37 175
+Podemos observar que se han creado dos clusters, con 385 y 184  observaciones respectivamente. Además, se puede ver claramente que el cluster 1 contiene principalmente observaciones de la clase "B" (benigno), mientras que el cluster 2 contiene principalmente observaciones de la clase "M" (maligno). Esto sugiere que el algoritmo K-means ha sido capaz de agrupar las observaciones en función de su similitud, lo que facilita la identificación de patrones en los datos.
+
+#### 3.4.4. Clustering jerárquico
+
+El clustering jerárquico es una técnica que organiza los datos en una estructura de árbol, donde los clusters se forman de manera recursiva mediante la unión o división de grupos. Este enfoque permite visualizar la estructura de los datos en diferentes niveles de granularidad y facilita la interpretación de las relaciones entre las observaciones.
+
+```{r}
+# Calcular distancias y realizar clustering jerárquico
+hierarchical_model <- hclust(dist(data_normalized), method = "ward.D2")
+
+# Visualizar el dendrograma
+plot(hierarchical_model, main = "Dendrograma", sub = "", xlab = "", cex = 0.6)
+
+# Cortar el dendrograma en el número óptimo de clusters
+optimal_clusters <- 2
+data$cluster <- cutree(hierarchical_model, k = optimal_clusters)
+
+# Mostrar los clusters de diferentes formas:
+
+# Tabla de frecuencias
+table(data$cluster)
+
+# Resumen de los datos agrupados por cluster
+aggregate(data[, -ncol(data)], by = list(cluster = data$cluster), FUN = mean)
+
+ 
+```
+
+El dendrograma muestra la estructura jerárquica de los datos, donde las observaciones se agrupan en clusters en función de su similitud. Al cortar el dendrograma en el número óptimo de clusters, se obtiene una partición de los datos en dos grupos, lo que permite identificar las relaciones entre las observaciones y visualizar la estructura subyacente de los datos.
+
+#### 3.4.5. DBSCAN
+
+El algoritmo DBSCAN (Density-Based Spatial Clustering of Applications with Noise) es una técnica de clustering que agrupa los datos en función de la densidad de los puntos. Este enfoque es útil para identificar clusters de formas arbitrarias y detectar outliers en los datos.
+
+En este caso, se ajusta el modelo DBSCAN con un radio máximo de 10 y un mínimo de 2 puntos para formar un cluster. Los puntos que no pertenecen a ningún cluster se consideran ruido.
+
+```{r}
 
 
+# Ajustar el modelo DBSCAN
+eps <- 10  # Radio máximo para vecinos
+minPts <- 2  # Puntos mínimos para formar un cluster
+dbscan_model <- dbscan(data_normalized, eps = eps, minPts = minPts)
+
+# Agregar etiquetas de cluster al dataset original
+data$cluster <- dbscan_model$cluster
+
+# Mostrar los clusters de diferentes formas:
+
+# Tabla de frecuencias (los valores 0 son ruido)
+table(data$cluster)
+
+# Resumen de los datos agrupados por cluster (excluyendo ruido)
+aggregate(data[data$cluster > 0, -ncol(data)], 
+          by = list(cluster = data$cluster[data$cluster > 0]), 
+          FUN = mean)
+
+
+```
+Como se puede observar, el algoritmo DBSCAN identifica 2 clusters y asigna los puntos que no pertenecen a ningún cluster como ruido. Uno de ellos con 566 por lo que no ha realizado una buena agrupación.
+
+```{r}
+
+# Calcular el coeficiente de silueta para diferentes métodos
+silhouette_kmeans <- silhouette(kmeans_model$cluster, dist(data_normalized))
+silhouette_hierarchical <- silhouette(cutree(hierarchical_model, k = optimal_clusters), dist(data_normalized))
+silhouette_dbscan <- silhouette(dbscan_model$cluster, dist(data_normalized))
+
+# Visualizar los coeficientes
+plot(silhouette_kmeans, main = "Silueta - K-Means")
+plot(silhouette_hierarchical, main = "Silueta - Clustering Jerárquico")
+plot(silhouette_dbscan, main = "Silueta - DBSCAN")
+```
+Como resultado de la comparación, el k-means tiene una media de anchura de silueta de 0,35, el clustering jerárquico de 0,29 y el DBSCAN de 0,35. Esto sugiere que los clusters generados por k-means y DBSCAN son más cohesivos y bien definidos en comparación con el clustering jerárquico. El DBSCAN y k-means tienen una mayor cohesión y separación entre los clusters, lo que indica que estos algoritmos son más efectivos para agrupar los datos en función de la similitud entre las observaciones.
 
 
 El siguiente paso en nuestro análisis no supervisado es aplicar el Análisis de Componentes Principales (PCA). Esta técnica permitirá visualizar la estructura de los datos, así como validar los resultados obtenidos a través del clustering.
@@ -969,8 +1079,7 @@ t-distributed Stochastic Neighbor Embedding es una técnica no supervisada de re
 
 
 ```{r}
-#install.packages("Rtsne")
-library(Rtsne)
+
 set.seed(42)
 tsne_model <- Rtsne(data_normalized, perplexity = 30, theta = 0.5, dims = 2)
 data_tsne <- as.data.frame(tsne_model$Y)
@@ -1032,13 +1141,12 @@ ggplot(data_tsne, aes(x = Dim1, y = Dim2, color = as.factor(cluster))) +
 ```
 
 
-Se visualizan claramente cuatro clústeres.
+Se visualizan claramente dos clústeres.
 
-Los clusters están bien definidos y separados espacialmente, especialmente entre el cluster púrpura y los demás.
+Los clusters están bien definidos y separados espacialmente.
 
 Existe un grado menor de solapamiento entre los clusters, lo que sugiere que las variables originales ofrecen una separación más clara entre las clases en este espacio.
 
-En cuanto al espacio de variación, los puntos están distribuidos en coordenadas centradas, con valores que van de -15 a 5 en PC1 y de -10 a 10 en PC2.
 
 #### 3.4.6.4 Índice Silouhette
 
@@ -1061,11 +1169,12 @@ cat("Silhouette Score - PCA:", silhouette_pca, "\n")
 cat("Silhouette Score - t-SNE:", silhouette_tsne, "\n")
 
 ```
-
-- El Silhouette Score sin reducción es 0.54, lo que indica una calidad moderada de los clusters. Esto sugiere que los puntos dentro de los clusters son razonablemente similares entre sí y están razonablemente separados de los puntos de otros clusters.
-Este valor sugiere que el clustering hecho en el espacio original de las variables es adecuado, pero podría mejorar.
-- El Silhouette Score después de realizar PCA es 0.34, lo cual es más bajo que el obtenido sin reducción de dimensionalidad. Esto indica que, al reducir las dimensiones a través de PCA, la calidad del clustering empeoró ligeramente.
--El Silhouette Score después de realizar t-SNE es 0.43, que es más bajo que el valor sin reducción pero superior al de PCA. Aunque t-SNE está diseñado principalmente para la visualización de datos, no optimiza el agrupamiento como tal, lo que puede haber causado que los resultados del clustering fueran menos eficientes.
+Silhouette Score - Sin reducción: 0.3482031 
+Silhouette Score - PCA: 0.3678096 
+Silhouette Score - t-SNE: 0.5216206 
+El Silhouette Score sin reducción es 0.34, lo que indica una media calidad de los clusters. Un valor cercano a 0.7 es generalmente considerado como un indicador de que el modelo está logrando una buena separación entre los clusters y que los puntos dentro de cada cluster son bastante similares entre sí.
+El Silhouette Score después de realizar PCA es 0.36, lo que indica una mejora en la calidad de los clusters en comparación con los datos originales. Esto sugiere que la reducción de dimensionalidad ha permitido una mejor separación de los clusters y una mayor cohesión dentro de cada cluster.
+El Silhouette Score después de realizar t-SNE es 0.52, lo que indica una mejora significativa en la calidad de los clusters en comparación con los datos originales y con la reducción de dimensionalidad mediante PCA. Esto sugiere que t-SNE ha logrado una mejor separación de los clusters y una mayor cohesión dentro de cada cluster.
 
 
 
@@ -1087,10 +1196,6 @@ Se utilizará el Algoritmo Apriori para obtener las reglas de asociación, ya qu
 
 Se instalará el paquete necesario (arules), que es un paquete en R que proporciona funcionalidades para trabajar con reglas de asociación.
 
-```{r}
-#install.packages("arules")
-library(arules)
-```
 
 2.  Se cargan los datos como transacciones en el formato `basket`, interpretando cada transacción como un conjunto de ítems (basket). Esto permite manejar tanto datos categóricos (como diagnosis) como continuos (los otros atributos) en la misma transacción.
 
@@ -1113,15 +1218,19 @@ Se filtran las reglas basadas en el lift y la confianza, de modo que solo se con
 ```{r}
 filtradas <- subset(reglasAsociacion, lift > 1.5 & confidence >= 0.8)
 inspect(filtradas)
+
+
 ```
 
+Como se puede observar, se ha generado una regla de asociación con un soporte del 2.28%, una confianza del 100% y un lift de 1.59. 
+
+No se ha conseguido encontrar reglas de asociación significativas con los datos reducidos. Esto puede deberse a la falta de variabilidad en los datos o a la reducción de variables, lo que limita la capacidad del algoritmo para encontrar relaciones significativas entre los ítems.
 
 #### 3.4.6.1 Visualización de las Reglas de Asociación:
 
 ```{r}
 # Instalar el paquete de visualización
-# install.packages("arulesViz")
-library(arulesViz)
+
 
 # Visualizar las reglas
 plot(filtradas, method = "graph")
@@ -1134,15 +1243,8 @@ plot(filtradas, method = "graph")
 
 ### 4. Conclusiones
 
-Hemos llevado a cabo un análisis exhaustivo de un conjunto de datos de cáncer de mama, que incluye la exploración de datos, la construcción de modelos de aprendizaje supervisado y no supervisado, así como la identificación de reglas de asociación. Algunos hallazgos clave son los siguientes:
 
--   Agrupación en los datos de cáncer de mama: Se detectaron patrones de agrupación mediante técnicas de clustering y reducción de dimensionalidad. Dos de los cuatro clústeres identificados en el análisis no supervisado son 100% malignos, lo cual podría ser de especial interés para estudios futuros.
-
--   Relevancia de las reglas de asociación: Se identificaron reglas de asociación significativas entre las variables del conjunto de datos, lo que ofrece información valiosa sobre las relaciones entre las características celulares y el diagnóstico de cáncer de mama.
-
--   Aprendizaje supervisado: Evaluamos varios modelos, incluyendo Árboles de Decisión, Random Forest, SVM, Regresión Logística y Redes Neuronales. Los modelos Random Forest y SVM destacaron con un rendimiento excepcional, logrando altas puntuaciones de AUC y sensibilidad. La reducción de variables menos importantes no afectó significativamente el desempeño de los modelos, lo que sugiere que las variables eliminadas no aportaban información relevante y probablemente no introducían ruido, dado el alto grado de correlación entre las variables.
-
-En general, este análisis proporciona información valiosa para la detección y el diagnóstico del cáncer de mama, resaltando la importancia de utilizar una variedad de técnicas de análisis de datos para lograr una comprensión completa de los patrones y relaciones en los datos.
+Hemos llevado a cabo un análisis exhaustivo del conjunto de datos de cáncer de mama, explorando tanto modelos de aprendizaje supervisado como no supervisado y la identificación de reglas de asociación. Los modelos Random Forest y SVM destacaron por su rendimiento excepcional, logrando altas puntuaciones de AUC y sensibilidad. Las variables más importantes para predecir el cáncer de mama fueron "perimeter_worst", "area_worst" y "concave.points_worst". La eliminación de variables menos importantes no afectó significativamente el desempeño de los modelos, lo que sugiere que estas variables no aportaban información relevante ni introducían ruido, permitiendo modelos más eficientes y menos propensos al sobreajuste. En el aprendizaje no supervisado, el clustering sin reducción de dimensionalidad proporcionó la mejor separación entre clusters, con un Silhouette Score más alto de 0.68. Sin embargo, la PCA redujo significativamente la calidad del clustering al eliminar componentes clave. t-SNE mostró una calidad intermedia (0.54) en comparación con el espacio original de las variables, destacando su utilidad para la visualización pero limitando la preservación de la estructura del clustering. Este análisis subraya la importancia de emplear diversas técnicas de análisis de datos para obtener una comprensión completa de los patrones y relaciones en los datos de cáncer de mama.
 
 ### 5. Referencias
 
