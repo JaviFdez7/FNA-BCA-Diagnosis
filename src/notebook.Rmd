@@ -859,11 +859,11 @@ Como los modelos no mejoran ni empeoran significativamente con la reducción de 
 
 ### 3.4. Análisis No Supervisado.
 
-El análisis no supervisado tiene como objetivo descubrir patrones ocultos o estructuras en los datos sin la necesidad de etiquetas. En este caso, aplicaremos técnicas de clustering y reducción de dimensionalidad para explorar la información contenida en las características de las células. Estas técnicas nos ayudarán a identificar grupos de observaciones similares y a obtener una visión más clara de las relaciones entre las variables.
+El análisis no supervisado tiene como objetivo identificar patrones ocultos o estructuras presentes en los datos sin requerir etiquetas. Para este propósito, se emplean técnicas de clustering y reducción de dimensionalidad que permiten explorar la información contenida en las características de las células. Estas técnicas facilitan la identificación de grupos de observaciones similares y proporcionan una perspectiva más clara sobre las relaciones entre las variables.
 
 #### 3.4.1. Preparación del Dataset
 
-Antes de aplicar cualquier técnica de análisis no supervisado, es necesario realizar un preprocesamiento adecuado de los datos. El primer paso es eliminar la columna "diagnosis", ya que esta variable contiene la etiqueta que queremos predecir y no se utiliza en el análisis no supervisado. A continuación, normalizamos las características, ya que muchas técnicas, como el clustering, son sensibles a las escalas de las variables. Esto asegura que todas las variables tengan la misma influencia en el modelo.
+Previo a la aplicación de técnicas de análisis no supervisado, es fundamental realizar un preprocesamiento adecuado de los datos. El primer paso consiste en eliminar la columna "diagnosis", ya que dicha variable contiene la etiqueta que se desea predecir y no se utiliza en este tipo de análisis. Posteriormente, se normalizan las características, dado que muchas técnicas, como el clustering, son sensibles a las escalas de las variables. Este proceso asegura que todas las variables tengan la misma influencia en el modelo.
 
 ```{r}
 data_UnSupervised <- data %>% select(-diagnosis)
@@ -871,7 +871,8 @@ head(data_UnSupervised)
 data_UnSupervised$diagnosis
 ```
 
-La normalización permite que las variables con diferentes unidades de medida no dominen el análisis y garantiza que el algoritmo de clustering o reducción de dimensionalidad no se vea sesgado por la magnitud de las variables.
+La normalización asegura que las variables con diferentes unidades de medida no dominen el análisis y evita que el algoritmo de clustering o reducción de dimensionalidad se vea sesgado por la magnitud de las variables.
+Se utiliza la función preProcess para calcular los parámetros de normalización y con la función predict, se aplican los parámetros calculados previamente al conjunto de datos, generando una nueva versión normalizada de las características
 
 ```{r}
 # Normalizar los datos (sin la variable de respuesta si existe)
@@ -880,13 +881,17 @@ data_normalized <- predict(preprocess_params, data_UnSupervised[, -ncol(data_UnS
 
 ```
 
+El primer método de análisis no supervisado que se emplea es el clustering, el cual tiene como propósito agrupar las observaciones en función de sus similitudes.
+
 #### 3.4.2. Clustering: Determinación del Número Óptimo de Clusters
 
-El primer paso en cualquier técnica de clustering es determinar el número adecuado de grupos (clusters). Utilizamos dos métodos comunes para esto:
+En el análisis de clustering, es fundamental determinar el número óptimo de grupos o clusters, ya que este parámetro impacta directamente en la calidad de la segmentación. Existen diversas metodologías para identificar este valor, las cuales se basan en criterios estadísticos y geométricos que evalúan la estructura de los datos y la cohesión de los clusters formados.
 
-Método del codo: Este método muestra la variación explicada en función del número de clusters. En general, se busca el "codo" de la gráfica, el punto en el que la mejora en la varianza explicada se estabiliza, indicando que añadir más clusters no mejora significativamente la segmentación.
+El primer paso para aplicar técnicas de clustering consiste en identificar el número adecuado de clusters. Dos métodos comunes para este propósito son:
 
-Índice de Silhouette: Este índice mide cómo de similar es cada punto a su propio cluster en comparación con los puntos de otros clusters. Un valor cercano a +1 indica que los puntos están bien agrupados, mientras que un valor cercano a -1 indica que los puntos podrían estar mal agrupados.
+Método del codo: Este enfoque evalúa la variación explicada en función del número de clusters. Se identifica el "codo" en la gráfica, que corresponde al punto donde la mejora en la varianza explicada se estabiliza, indicando que añadir más clusters no produce beneficios significativos.
+
+Índice de Silhouette: Este índice mide la similitud de cada punto con su propio cluster en comparación con otros clusters. Valores cercanos a +1 sugieren que los puntos están correctamente agrupados, mientras que valores cercanos a -1 indican posibles errores en la asignación de clusters.
 
 ```{r}
 # Método del codo
@@ -906,9 +911,11 @@ plot(2:15, silhouette_scores[-1], type = "b", xlab = "Número de Clusters", ylab
 
 ```
 
+El siguiente método de análisis no supervisado que se utiliza es el algoritmo K-means, el cual permite agrupar los datos en un número específico de clusters previamente determinado. 
+
 #### 3.4.3. K-Means
 
-Una vez determinado el número óptimo de clusters, implementamos el algoritmo de K-means. Este es un algoritmo de clustering que agrupa los datos en K clusters, minimizando la varianza dentro de cada grupo. Es importante mencionar que, aunque este es un algoritmo ampliamente utilizado, la interpretación de los resultados debe hacerse con cautela, ya que el número de clusters es un valor sensible a la inicialización y la distribución de los datos.
+El algoritmo K-means es una técnica de clustering que organiza los datos en K clusters, con el objetivo de minimizar la varianza dentro de cada grupo. Aunque se trata de un método ampliamente utilizado, la interpretación de los resultados debe realizarse con cautela, ya que el número de clusters es sensible tanto a la inicialización como a la distribución de los datos.
 
 ```{r}
 set.seed(123)
@@ -931,9 +938,12 @@ aggregate(data[, -ncol(data)], by = list(cluster = data$cluster), FUN = mean)
 
 ```
 
+
+El siguiente paso en nuestro análisis no supervisado es aplicar el Análisis de Componentes Principales (PCA). Esta técnica permitirá visualizar la estructura de los datos, así como validar los resultados obtenidos a través del clustering.
+
 #### 3.4.4. PCA
 
-El próximo paso de nuestro análisis no supervisado será utilizar el Análisis de Componentes Principales para visualizar la estructura de los datos y validar los resultados del clustering.
+La dimensionalidad se reducirá transformando las variables originales en componentes principales para identificar la mayor parte de la variabilidad en los datos. Esto facilita la visualización de la estructura subyacente y optimiza la interpretación de los resultados del clustering. PCA simplifica el análisis al reducir la complejidad de los datos.
 
 ```{r}
 # PCA
@@ -952,11 +962,13 @@ table(data$diagnosis, data$cluster)
 
 Se visualizan claramente cuatro clústeres.
 
-Los clústeres están bien definidos y separados espacialmente, especialmente entre el clúster púrpura y los demás.
+Los clusters están bien definidos y separados espacialmente, especialmente entre el cluster púrpura y los demás. 
 
-Hay un grado menor de solapamiento entre los clústeres, lo que sugiere que las variables originales ofrecen una separación más clara entre las clases en este espacio. Respecto al espacio de Variación, los puntos están distribuidos en torno a coordenadas más centradas (de -15 a 5 en PC1 y -10 a 10 en PC2).
+Existe un grado menor de solapamiento entre los clusters, lo que sugiere que las variables originales ofrecen una separación más clara entre las clases en este espacio. 
 
-Vamos también a repetir el clustering con el dataset reducido generado durante el estudio de la importancia de las variables:
+En cuanto al espacio de variación, los puntos están distribuidos en coordenadas centradas, con valores que van de -15 a 5 en PC1 y de -10 a 10 en PC2.
+
+También se repetirá el clustering con el dataset reducido generado durante el estudio de la importancia de las variables.
 
 #### 3.4.5. Análisis No Supervisado con Dataset Reducido según importancia de variables
 
@@ -1015,45 +1027,41 @@ ggplot(pca_data_reduced, aes(x = PC1, y = PC2, color = cluster)) +
   labs(title = "Clustering visualizado en espacio PCA")
 ```
 
-En este caso, se visualizan cinco clústeres, lo que podría indicar una mayor sensibilidad del modelo al agrupar los datos reducidos.
+En este caso, se visualizan cinco clusters, lo que podría indicar una mayor sensibilidad del modelo al agrupar los datos reducidos. Los clusters están más compactos en el centro del gráfico, con menos separación clara en comparación con la versión completa. Además, hay clústeres adicionales (como el cluster 5, representado en rosa), lo que podría indicar una partición más forzada o una sensibilidad al ruido. 
 
-Los clústeres están más compactos en el centro del gráfico, con menos separación clara en comparación con la versión completa.
+Existe un mayor solapamiento entre los clusters en comparación con el gráfico sin reducción de datos. El rango del eje PC1 varía de -5 a 15, mientras que PC2 tiene una distribución de -5 a 15, lo que sugiere un cambio en la importancia relativa de los componentes principales después de la reducción de variables.
 
-Existen clústeres adicionales (como el clúster 5, representado en rosa), lo que puede indicar una partición más forzada o sensibilidad al ruido.
+En conclusión, sin reducción, los clusters son más definidos y separados, lo que sugiere que las variables eliminadas contienen información relevante para distinguir los grupos. Con reducción, los clusters muestran mayor solapamiento y parecen menos definidos, posiblemente debido a la pérdida de información al reducir las variables. La aparición de un quinto cluster en el conjunto reducido indica que la reducción puede introducir sensibilidad al ruido o revelar patrones más complejos (aunque menos significativos).
 
-Hay un mayor solapamiento entre los clústeres en comparación con el gráfico sin reducción de datos.
 
-El rango del eje PC1 varía de -5 a 15, mientras que PC2 tiene una distribución de -5 a 15, lo que sugiere un cambio en la importancia relativa de los componentes principales después de la reducción de variables.
-
-En conclusión, sin reducción, los clústeres son más definidos y separados, lo que sugiere que las variables eliminadas contienen información relevante para distinguir los grupos.
-
-Con reducción, los clústeres muestran mayor solapamiento y parecen menos definidos, posiblemente debido a la pérdida de información al reducir las variables.
-
-La aparición de un quinto clúster en el conjunto reducido indica que la reducción puede introducir sensibilidad al ruido o revelar patrones más complejos (aunque menos significativos).
+El siguiente algoritmo utilizado en el análisis no supervisado es el Apriori para reglas de asociación.
 
 #### 3.4.6. Reglas de asociación con algoritmo Apriori.
 
-Las reglas de asociación son usadas en Data Mining para identificar relaciones entre elementos de un conjunto de datos. Estas relaciones, a su vez, nos ayudan a encontrar patrones de datos.
+Las reglas de asociación se emplean en Data Mining para identificar relaciones entre elementos de un conjunto de datos. Estas relaciones ayudan a encontrar patrones en los datos y están formadas por un antecedente {a} y un consecuente {b}, indicando que {a} -> {b}. Es relevante conocer términos como:
 
-Estan formadas por un antecedente {a} y un consecuente {b}, de manera que {a} implica -\> {b} También es conveniente conocer los términos de: - Soporte: Proporción de transacciones que contienen ambos conjuntos de ítems (antecedente y consecuente) - Confianza: Aciertos o cómo de bien predice el antecedente al consecuente.
+Soporte: Proporción de transacciones que contienen ambos conjuntos de ítems (antecedente y consecuente).
+Confianza: Indicador de cuán bien predice el antecedente al consecuente.
+
 
 *Algoritmo Apriori*
 
-Haremos uso del Algoritmo Apriori para obtener las reglas de asociación ya que es útil para encontrar itemsets frecuentes en datos transaccionales (datos tipo eventos en un intervalo de tiempo determinado)
+Se utilizará el Algoritmo Apriori para obtener las reglas de asociación, ya que resulta útil para identificar itemsets frecuentes en datos transaccionales, como eventos registrados en un intervalo de tiempo determinado.
 
 ##### Fase 1: Reducción del número de candidatos
 
-Generar todos los itemsets con 1 único ítem. Posteriormente, se combinarán estos itemstes formando itemsets con 2 elementos y así sucesivamente. Nos quedaremos con los pares cuyo soporte sea mayor o igual a un minsup (eliminando aquellos que no cumplen con el umbral de soporte)
+1. Primero, se generan todos los itemsets con un único ítem. Luego, estos itemsets se combinan para formar itemsets con dos elementos, y así sucesivamente. Se seleccionarán únicamente los pares cuyo soporte sea mayor o igual a un umbral minsup, eliminando aquellos que no cumplan con este criterio.
 
-1.  Intalaremos el paquete necesario (arules) paquete en R que proporciona la funcionalidad para trabajar con reglas de asociación.
+Se instalará el paquete necesario (arules), que es un paquete en R que proporciona funcionalidades para trabajar con reglas de asociación.
+
+
 
 ```{r}
 #install.packages("arules")
 library(arules)
 ```
 
-2.  Cargamos los datos como transacciones: Formato basket: Cada transacción se interpreta como un conjunto de ítems (basket), permitiendo tanto datos categóricos (diagnosis) como continuos (el resto) en la misma transacción.
-
+2. Se cargan los datos como transacciones en el formato `basket`, interpretando cada transacción como un conjunto de ítems (basket). Esto permite manejar tanto datos categóricos (como diagnosis) como continuos (los otros atributos) en la misma transacción.
 ```{r}
 transacciones <- read.transactions("data_reduced.csv", format = "basket", sep = ",")
 
@@ -1061,12 +1069,14 @@ transacciones <- read.transactions("data_reduced.csv", format = "basket", sep = 
 
 ##### Fase 2: Generar reglas Parámetros: soporte mínimo (0.01 -\> 1%) y confianza mínima (80%)
 
+En esta fase, se procederá a generar las reglas de asociación utilizando los parámetros de soporte mínimo (0.01 - 1%) y confianza mínima (80%). Estos valores permiten filtrar las reglas que son suficientemente frecuentes y confiables, asegurando que se obtengan relaciones significativas entre los ítems en los datos.
+
 ```{r}
 reglasAsociacion <- apriori(transacciones, parameter = list(supp = 0.01, conf = 0.8))
 
 ```
 
-Filtramos las reglas basadas en el lift y la confianza, así solo se consideran aquellas con un lift mayor que 1.5 y una confianza superior al 80%. lift \> 1.5 fuerte asociación entre los ítems en la regla. confidence \>= 0.8 asegura que la probabilidad de que el consecuente ocurra cuando el antecedente está presente es alta.
+Se filtran las reglas basadas en el lift y la confianza, de modo que solo se consideren aquellas con un lift mayor a 1.5 y una confianza superior al 80%. Un lift > 1.5 indica una fuerte asociación entre los ítems en la regla, mientras que una confianza ≥ 0.8 asegura que la probabilidad de que el consecuente ocurra cuando el antecedente está presente es alta.
 
 ```{r}
 filtradas <- subset(reglasAsociacion, lift > 1.5 & confidence >= 0.8)
@@ -1074,11 +1084,15 @@ inspect(filtradas)
 ```
 
 ### 4. Conclusiones
-Hemos realizado un análisis completo de un conjunto de datos de cáncer de mama, incluyendo la exploración de datos, la construcción de modelos de aprendizaje supervisado y no supervisado, y la identificación de reglas de asociación. Algunos de los hallazgos clave incluyen:
-Detección de patrones de agrupación en los datos de cáncer de mama mediante técnicas de clustering y reducción de dimensionalidad. En los que 2 de los 4 clústeres identificados en el análisis no supervisado son 100% malignos, por lo que podrían ser de especial interés para futuros estudios.
-Identificación de reglas de asociación significativas entre las variables del conjunto de datos, lo que proporciona información valiosa sobre las relaciones entre las características de las células y el diagnóstico de cáncer de mama.
-Respecto al aprendizaje supervisado, hemos evaluado varios modelos, incluyendo Árboles de Decisión, Random Forest, SVM, Regresión Logística y Redes Neuronales. Los modelos Random Forest y SVM mostraron un rendimiento excepcional, con altas puntuaciones de AUC y sensibilidad. La reducción de variables menos importantes no afectó significativamente el rendimiento de los modelos, lo que sugiere que las variables eliminadas no aportaban información relevante pero tampoco introducían ruido probablemente debido a la alta correlación entre las variables.
-En general, este análisis proporciona información valiosa para la detección y el diagnóstico del cáncer de mama, y destaca la importancia de utilizar una variedad de técnicas de análisis de datos para obtener una comprensión completa de los patrones y relaciones en los datos.
+Hemos llevado a cabo un análisis exhaustivo de un conjunto de datos de cáncer de mama, que incluye la exploración de datos, la construcción de modelos de aprendizaje supervisado y no supervisado, así como la identificación de reglas de asociación. Algunos hallazgos clave son los siguientes:
+
+- Agrupación en los datos de cáncer de mama: Se detectaron patrones de agrupación mediante técnicas de clustering y reducción de dimensionalidad. Dos de los cuatro clústeres identificados en el análisis no supervisado son 100% malignos, lo cual podría ser de especial interés para estudios futuros.
+
+- Relevancia de las reglas de asociación: Se identificaron reglas de asociación significativas entre las variables del conjunto de datos, lo que ofrece información valiosa sobre las relaciones entre las características celulares y el diagnóstico de cáncer de mama.
+
+- Aprendizaje supervisado: Evaluamos varios modelos, incluyendo Árboles de Decisión, Random Forest, SVM, Regresión Logística y Redes Neuronales. Los modelos Random Forest y SVM destacaron con un rendimiento excepcional, logrando altas puntuaciones de AUC y sensibilidad. La reducción de variables menos importantes no afectó significativamente el desempeño de los modelos, lo que sugiere que las variables eliminadas no aportaban información relevante y probablemente no introducían ruido, dado el alto grado de correlación entre las variables.
+
+En general, este análisis proporciona información valiosa para la detección y el diagnóstico del cáncer de mama, resaltando la importancia de utilizar una variedad de técnicas de análisis de datos para lograr una comprensión completa de los patrones y relaciones en los datos.
 
 ### 5. Referencias
 
