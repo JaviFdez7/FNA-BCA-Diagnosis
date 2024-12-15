@@ -89,7 +89,7 @@ Se instalan los paquetes que serán necesarios durante el proyecto:
 -   Psych: Para análisis estadístico
 -   Corrplot: Visualización de matriz de correlación.
 
-```{r}
+```{r setup, warning=FALSE, message=FALSE}
 # Nota: Descomentar las líneas de instalación si no se tienen los paquetes instalados. Comando ctrl+shift+c para descomentar.
 
 #install.packages("tidyverse")
@@ -101,8 +101,10 @@ Se instalan los paquetes que serán necesarios durante el proyecto:
 #install.packages("psych")
 #install.packages("corrplot")
 #install.packages("ggcorrplot")
-
+#install.packages("car")
+#install.packages("pROC")
 library(tidyverse)
+library(pROC)
 library(caret)
 library(DataExplorer)
 library(dplyr)
@@ -111,6 +113,7 @@ library(lattice)
 library(psych)
 library(corrplot)
 library(ggcorrplot)
+library(car)
 ```
 
 #### 3.1.2. Carga y visualización de datos
@@ -119,6 +122,7 @@ Para comenzar el análisis es necesario realizar la carga de los datos, se visua
 
 ```{r}
 data <- read.csv("data/data.csv")
+#hola
 head(data)
 ```
 
@@ -143,111 +147,109 @@ Se visualiza un resumen estádistico de los datos.
 describe(data)
 ```
 
-```{r}
-# Obtener las clases de cada columna
-clases <- sapply(data, class)
+Se obtienen las clases de cada columna en el conjunto de datos para entender mejor su tipo de datos y estructura. Esto permite visualizar rápidamente el tipo de variable (numérica, categórica, etc.) que se encuentra en el dataset.
 
-# Convertir a un data frame para mejor visualización
+
+
+```{r}
+# sapply aplica una función a cada columna del dataframe
+clases <- sapply(data, class)
 clases_df <- data.frame(Clase = clases)
 
-# Imprimir de forma ordenada
 print(clases_df, row.names = FALSE)
 ```
+Se verifica si existen valores faltantes en los datos utilizando la función `anyNA()`. Esto permite identificar rápidamente si hay datos incompletos en el dataset que puedan requerir limpieza o manejo especial.
 
 ```{r}
-# Veamos si existen valores faltantes en nuestros datos:
-
 anyNA(data)
 ```
 
-```{r}
-#Contamos el numero de valores faltantes por columna:
+Se observa que existen valores faltantes en el dataset. Para visualizar de manera más clara la cantidad de valores faltantes por columna, se utiliza la función `plot_missing(data)`.
 
-colSums(is.na(data))
+```{r}
 plot_missing(data)
 ```
 
-Como puede observarse, contamos con 569 valores faltantes en la última columna "X". Más adelante veremos como tratarlo.
+Como puede observarse, se cuenta con 569 valores faltantes en la última columna "X". Más adelante se procederá a eliminar esta columna.
 
-#### Análisis exploratorio de los datos
+#### 3.1.3. Análisis exploratorio de los datos
 
-En este paso nuestro objetivo será entender la distribución y relaciones de variables.
+En este paso el objetivo será entender la distribución y relaciones de variables.
 
-#### Visualización de distribuciones y correlaciones:
+##### 3.1.3.1. Visualización de distribuciones y correlaciones:
+
+Se visualiza un resumen gráfico general para entender las distribuciones y correlaciones entre las variables en el conjunto de datos. Esto ayuda a identificar patrones, distribuciones de frecuencia y posibles relaciones entre las diferentes columnas del dataset.
 
 ```{r}
-#Veamos un resumen gráfico general:
-
 plot_intro(data)
 ```
+Como se puede observar, el dataset cuenta con un 3% de columnas discretas, en concreto la columna "diagnosis" que es la variable objetivo, y un 94% de columnas continuas. Además, se observa un 3% de columnas con valores faltantes, que corresponden a la columna "X".
+
+Se visualizan las variables categóricas que dice si el tumor es "Maligno" o "Benigno" para contar cuántas observaciones hay de cada tipo. Esto permite ver la distribución de la columna diagnosis y entender la proporción entre ellas en el dataset.
 
 ```{r}
-#Variables Categóricas:
-
-plot_bar(data)
+diagnosis_counts <- table(data$diagnosis)
+plot_bar(data$diagnosis)
+print("Distribución de la variable 'diagnosis' Benigno (B) y Maligno (M):")
+print(diagnosis_counts)
 ```
+La columna "diagnosis" contiene dos clases: "B" (Benigno) y "M" (Maligno). La distribución de las clases es desigual, con 357 observaciones de la clase "B" y 212 observaciones de la clase "M". Esto indica un desequilibrio ligero en la distribución de las clases.
 
+
+Para visualizar la distribución de las variables numéricas, se utiliza la función `plot_histogram(data)`. Esto permite ver la distribución de cada variable en el dataset y comprender mejor la variabilidad y rango de valores de las características.
 ```{r}
-#Variables Numéricas
 plot_histogram(data)
 ```
+Como se puede observar, las variables numéricas presentan diferentes distribuciones y rangos de valores. Algunas variables, como "concave.points_worst", parecen tener una distribución sesgada hacia la derecha, mientras que otras, como "symmetry_mean", parecen tener una distribución más simétrica. Estas diferencias en las distribuciones pueden ser útiles para identificar patrones y relaciones entre las variables.
 
-#### Preprocesamiento de los datos.
 
-**Eliminación de valores faltantes:**
+#### 3.1.4. Preprocesamiento de los datos
+Es necesario realizar un preprocesamiento de los datos para limpiarlos y prepararlos para el análisis y modelado. Esto incluye la eliminación de valores faltantes, la codificación de variables categóricas y la selección de atributos relevantes.
 
-Para comenzar, ya sabemos que existe una columna cuyos valores son todos NA, es decir, faltantes. El primero paso en nuestro preprocesamiento será eliminar esta columna "x":
+##### 3.1.4.1. Eliminación de valores faltantes
+
+Para comenzar, se ha identificado que hay una columna con todos los valores faltantes, es decir, NA. El primer paso en el preprocesamiento será eliminar esta columna "x".
+
+Se verifica que la columna "X" se haya eliminado correctamente y que no haya otros valores faltantes en el dataset.
 
 ```{r}
 data <- data %>% select(-X)
-```
-
-Veamos si se ha borrado correctamente la columna X y si ahora existe algún otro valor faltante:
-
-```{r}
-colnames(data)
-```
-
-```{r}
-# Veamos si existen valores faltantes en nuestros datos:
-
+plot_missing(data)
 anyNA(data)
-
-#Contamos el numero de valores faltantes por columna:
-
-plot_missing(data, title = "Valores Faltantes")
 ```
-
-Además de la columna con valores Faltantes, también tenemos una columna "ID" que no nos aporta ninguna información por lo que también procederemos a eliminarla:
+No quedan valores faltantes en el dataset, por lo que se procederá a eliminar la columna "id", ya que no aporta información relevante.
 
 ```{r}
 data <- data %>% select(-id)
 
-```
-
-```{r}
-colnames(data)
-head(data)
+print("Busqueda de columna id en el dataset:")
+print("id" %in% colnames(data))
 
 ```
 
-Como podemos observar, se ha eliminado la columna "id" y se ha verificado que no existen mas valores faltantes exceptos los ya eliminados en "X".
+Como se puede observar, se ha eliminado la columna "id" y se ha verificado que no hay más valores faltantes, excepto los ya eliminados en "X".
 
-Después de ellos contamos con un dataset de:
+Después de estos procesos, contamos con un dataset de:
+
 
 ```{r}
-dim(data)
+dim <- dim(data)
+
+cat("Número de columnas:", dim[2], "\n")
+cat("Número de filas:", dim[1], "\n")
 ```
 
 569 filas y 31 columnas.
 
-Codificación de variables Categóricas
+##### 3.1.4.2. Codificación de variables Categóricas
 
-Anteriormente vimos que nuestro dataset cuenta con una única columna de valores categóricos. "Diagnosis" cuyos valores tienen el siguiente significado: + M (malignant) + B (benign)
+Anteriormente, vimos que nuestro dataset cuenta con una única columna de valores categóricos, "Diagnosis", cuyos valores tienen el siguiente significado: 
+- M (malignant)
+- B (benign)
 
-El siguiente paso en el preprocesado de datos será pasar esta columna a numérica. Como solo se presentan dos posibles valores (M y B), se aplicará Codificación Binaria: El valor "M" pasará a ser 1 y valor "B" pasará a ser 0.
+El siguiente paso en el preprocesado de datos será pasar esta columna a numérica. Como solo se presentan dos posibles valores ("M" y "B"), se aplicará Codificación Binaria: El valor "M" pasará a ser 1 y valor "B" pasará a ser 0.
 
-Aunque más adelante volveremos a pasarla a categórica, ahora es necesario hacerla binaria para poder estudiar la correlación de las variables.
+Aunque más adelante se volverá a pasar a categórica, ahora es necesario hacerla binaria para poder estudiar la correlación de las variables.
 
 ```{r}
 
@@ -255,14 +257,15 @@ Aunque más adelante volveremos a pasarla a categórica, ahora es necesario hace
 data$diagnosis <- ifelse(data$diagnosis == "M", 1, 0)
 ```
 
-Vamos a verificar que se ha realizado correctamente la conversión:
+Se verifica que la columna "diagnosis" se haya codificado correctamente.
 
 ```{r}
-table(data$diagnosis)
-# print(data$diagnosis)
+# imprimir los primeros valores de la columna diagnosis, formateado
+print("Valores de la columna 'diagnosis' después de la codificación:")
+data$diagnosis
 ```
 
-Nos cercioramos de que no existe ningún otro valor categórico en el dataset:
+A continuación, se verifica que todas las columnas del dataset sean numéricas, ya que algunos modelos de aprendizaje automático requieren que todas las variables de entrada sean numéricas. Para ello, se identifican las columnas categóricas y se comprueba que todas las columnas sean numéricas.
 
 ```{r}
 
@@ -272,19 +275,23 @@ names(data)[categorical_columns]
 
 ```
 
-Efectivamente, todas nuestras columnas ahora son numéricas, lo que nos da paso al siguiente punto en nuestro preprocesamiento de datos.
+Efectivamente, todas las columnas ahora son numéricas, lo que da paso al siguiente punto en el preprocesamiento de datos.
 
-#### Estudio de correlación.
+##### 3.1.4.3. Estudio de correlación.
 
-Al tener nuestro dataset limpio de NA y solo presentes variables numéricas, el siguiente paso será estudiar las posibles correlaciones de nuestro dataset.
+Al tener el dataset limpio de NA y solo presentes variables numéricas, el siguiente paso será estudiar las posibles correlaciones de nuestro dataset.
 
 Estudiar la correlación de los datos ayuda a identificar patrones y relaciones entre variables, lo que podría conducir a nuevas hipótesis y descubrimientos. Además, un buen estudio de correlaciones podría ser útil para seleccionar variables relevantes y construir modelos en un futuro.
 
-Los valores que obtendremos tendrán la siguiente interpretación:
+Los valores que se obtienen tendrán la siguiente interpretación:
 
 -   Correlación cercana a 1: Relación positiva fuerte.
 -   Correlación cercana a -1: Relación negativa fuerte.
 -   Correlación cercana a 0: No hay relación lineal significativa
+
+
+
+Se calcula la matriz de correlación para el conjunto de datos utilizando solo las observaciones completas. Esto permite visualizar las relaciones lineales entre las variables numéricas del dataset, identificando patrones de correlación positiva y negativa entre las diferentes variables.
 
 ```{r}
 
@@ -297,73 +304,74 @@ corrplot(correlation_matrix, method = "color", type = "upper", tl.cex = 0.8)
 
 ```
 
+
+Como se puede observar, dado que el conjunto de datos contiene 31 variables, la matriz de correlación resulta difícil de interpretar directamente. Para facilitar la comprensión de las relaciones entre las variables, se muestra a continuación una tabla con las parejas de atributos ordenadas por la magnitud de la correlación.
 ```{r}
+# Eliminar la columna 'diagnosis' antes de calcular las correlaciones
+data_no_target <- data[, !names(data) %in% c("diagnosis")]
 
-# Graficar la matriz de correlación con valores en las celdas
-ggcorrplot(correlation_matrix, 
-           method = "circle",  # Utilizar círculos para representar correlaciones
-           type = "lower",     # Mostrar solo la mitad inferior
-           lab = TRUE,         # Añadir los valores de correlación
-           lab_size = 2,       # Tamaño del texto en las celdas
-           colors = c("blue", "white", "red"), # Colores para las correlaciones negativas, neutrales y positivas
-           title = "Matriz de Correlación",  # Título del gráfico
-           tl.cex = 10)       # Tamaño de las etiquetas
+cor_matrix <- cor(data_no_target, use = "complete.obs")
 
+cor_matrix_df <- as.data.frame(as.table(cor_matrix))
+cor_matrix_df <- cor_matrix_df[cor_matrix_df$Var1 != cor_matrix_df$Var2, ]
+cor_matrix_df <- cor_matrix_df[order(-abs(cor_matrix_df$Freq)), ]
+# Eliminar duplicados. a<->b = b<->a
+cor_matrix_df <- cor_matrix_df[seq(1, nrow(cor_matrix_df), by = 2), ]
+
+print(cor_matrix_df)
 ```
+En la tabla se presentan las correlaciones entre las variables independientes del conjunto de datos. Se observan correlaciones altas entre algunas de las variables, como **perimeter_mean y radius_mean** (0.998), **perimeter_worst y radius_worst** (0.994), **area_mean y radius_mean** (0.987), y **area_worst y perimeter_worst** (0.978). Estas altas correlaciones tienen sentido porque las variables de **radio** (radius) y **perímetro** (perimeter) están matemáticamente relacionadas: a medida que el radio de un tumor aumenta, también lo hace su perímetro, lo que explica las correlaciones cercanas a **1**. Similarmente, las variables de **área** también están fuertemente correlacionadas con el radio y el perímetro, ya que un tumor con un mayor radio suele tener una mayor área. Aunque estas correlaciones son altas, no son sorprendentes, ya que todas están capturando diferentes aspectos del **tamaño** y la **forma** del tumor.
 
-Como puede observarse, al tratarese un conjunto de datos con 31 variables, la matriz de correlación cuesta interpretarla.
 
-Por ello, como "diagnosis" es nuestra variable objetivo, vamos a observar cómo se correlacionan las demás variables con ella:
+Dado que "diagnosis" es nuestra variable objetivo, vamos a observar cómo se correlacionan las demás variables con ella para entender mejor su relación y posibles influencias.
 
 ```{r}
-# Calcular la correlación entre cada variable numérica y 'diagnosis'
 cor_with_target <- cor(data, data$diagnosis, use = "complete.obs")
-
-# Crear un data frame para ver las correlaciones junto con los nombres de las variables
 correlation_df <- data.frame(Variable = names(data), Correlation = cor_with_target)
-
-# Ordenar el data frame por la columna de Correlation en orden descendente
 correlation_df_sorted <- correlation_df[order(-correlation_df$Correlation), ]
-
-# Ver las correlaciones ordenadas junto con los nombres de las variables
 print(correlation_df_sorted)
-
-
 ```
 
-En esta tabla podemos ver la correlación de cada variable con "diagnosis" en orden descendente.
+En esta tabla se presenta la correlación de cada variable con la variable objetivo **'diagnosis'**. La correlación de **'diagnosis'** consigo misma es **1**, como es esperado. Las variables que presentan las correlaciones más altas con **'diagnosis'** son **concave.points_worst** (0.793), **perimeter_worst** (0.782), **concave.points_mean** (0.776), **radius_worst** (0.776) y **perimeter_mean** (0.743). Estas correlaciones indican que las características relacionadas con el **número de puntos cóncavos** y el **perímetro** del tumor están fuertemente asociadas con el diagnóstico, lo que las convierte en buenos predictores del diagnóstico maligno o benigno. En general, las variables que presentan correlaciones superiores a **0.7** sugieren que son relevantes para la predicción de la variable objetivo. Estas características del **tamaño** y la **forma** del tumor, como el perímetro y los puntos cóncavos, son especialmente importantes para predecir si el tumor es maligno o benigno.
 
-#### Selección de Atributos:
+Las variables menos correlacionadas con **'diagnosis'** son **symmetry_se** (-0.006), **fractal_dimension_se** (-0.077), **texture_se** (-0.008), **smoothness_se** (-0.067) y **fractal_dimension_mean** (-0.012). Estas correlaciones cercanas a **0** indican que estas características no están fuertemente asociadas con el diagnóstico y pueden no ser tan relevantes para la predicción. Esto tiene sentido ya que son errores estándar y medidas de textura y suavidad que podrían no ser tan informativas para distinguir entre tumores malignos y benignos.
 
-Una de las formas de hacer una correcta selección de atributos es inspeccionar la anterior tabla de correlación:
 
-Como puede observarse, no existe ninguna variable que supere el 0,8, cuando las variables se correlacionan con la variable clase, en nuestro caso diagnosis, con más de un 0,9, suele ser conveniente eliminarlas para evitar redundancia, lo que no es nuestro caso.
 
-Por otro lado, tampoco tenemos valores demasiado bajos ni negativos, los valores negativos en nuestro caso, podrían ayudar al entrenamiento de nuestro modelo, es por ello, que de momento no se eliminarán variables del dataset.
+##### 3.1.4.4. Selección de Atributos
+
+La selección de atributos se refiere al proceso de identificar y elegir las variables más relevantes para un análisis, descartando las redundantes o irrelevantes para mejorar la calidad y eficiencia del modelo. En este caso, dado que algunas variables en el dataset muestran altas correlaciones entre sí, se podría considerar eliminarlas para reducir la dimensionalidad y simplificar el análisis.
+
+A pesar de las correlaciones fuertes entre ciertas variables, eliminar algunas no es adecuado ya que el conjunto de datos es limitado. La eliminación de variables podría llevar a una pérdida significativa de información valiosa que podría ser crucial para el análisis y las predicciones. Mantener todas las variables como "area_mean" o "perimeter_mean" aporta información única y valiosa al modelo, lo que permite capturar un panorama más completo del tumor.
+
+Por lo tanto, se optará por mantener todas las variables.
+
 
 ### 3.2. Análisis Supervisado.
 
 El aprendizaje supervisado, también conocido como machine learning supervisado, es una subcategoría del machine learning y la inteligencia artificial. Se define por el uso de conjuntos de datos etiquetados para entrenar algoritmos que clasifican los datos o predicen los resultados con precisión.
 
-A medida que se introducen datos en el modelo, éste ajusta sus ponderaciones hasta que el modelo se ha ajustado adecuadamente, lo que ocurre como parte del proceso de validación cruzada.
+A medida que se introducen datos en el modelo, este ajusta sus ponderaciones iterativamente hasta que se ha alcanzado un ajuste adecuado, proceso que ocurre como parte de la validación cruzada.
 
-En nuestro análisis, la variable a predecir será "diagnosis", que como vimos anteriormente, es de tipo binario, tomando 1 cuando el tumor es maligno, y 0 cuando el tumor resulta benigno.
+En este análisis, la variable a predecir será "diagnosis", que como se mencionó previamente, es binaria: 1 si el tumor es maligno y 0 si es benigno.
 
-En este análisis se han evaluado diferentes modelos de clasificación para un conjunto de datos binario con 569 muestras y 30 predictores, clasificados en dos categorías: 'Negative' y 'Positive'. Los modelos analizados son el Árbol de Decisión (CART), Random Forest (Bosque Aleatorio), Máquinas de Soporte Vectorial con núcleo Radial (SVM), y el Modelo Lineal Generalizado (GLM).
+Se evaluaron diferentes modelos de clasificación para un conjunto de datos binario con 569 muestras y 30 predictores, categorizados en 'Negative' y 'Positive'. Los modelos analizados incluyen el Árbol de Decisión (CART), Random Forest (Bosque Aleatorio), Máquinas de Soporte Vectorial con núcleo Radial (SVM), Modelo Lineal Generalizado (GLM) y un clasificador con redes neuronales.
 
-El primer paso para el análisis supervisado es realizar la divión del dataset.
+El primer paso en el análisis supervisado es realizar la división del dataset.
+
 
 #### 3.2.1 División del Dataset:
 
-Para este paso, usaremos la validación cruzada k-fold para dividir el dataset y evaluar el modelo. Aunque podríamos dividir el conjunto en un 80% train y un 20% train, valores típicos, se ha optado por utilizar K-fold ya que asegura que cada subconjunto o fold del dataset es utilizado tanto para el entrenamiento como para prueba en distintas iteraciones, lo que nos proporcionará una evaluación más robusta.
+Para este paso, se utilizará la validación cruzada K-fold para dividir el dataset y evaluar el modelo. En lugar de una división simple en entrenamiento y prueba, K-fold asegura que cada subconjunto o fold del dataset sea utilizado tanto para el entrenamiento como para la prueba en diferentes iteraciones, proporcionando así una evaluación más robusta.
+
+Establecemos una semilla para asegurar que los resultados sean reproducibles, es decir, que los mismos resultados se obtengan cada vez que se ejecute el código. Luego, configuramos el K-fold Cross-Validation con probabilidades de clase, que nos permitirá evaluar los modelos utilizando métricas de clasificación binaria.
+
 
 ```{r}
-# Establecemos una semilla para asegurar que los resultados sean reproducibles
 set.seed(123)
 
 k <- 5
 
-# Configurar K-fold Cross-Validation con probabilidades de clase
 train_control <- trainControl(
   method = "cv",           # Cross-validation
   number = k,              # Número de pliegues (folds)
@@ -372,20 +380,66 @@ train_control <- trainControl(
   savePredictions = "final" # Guardar las predicciones finales
 )
 
-
 ```
 
-#### 3.2.2 Entrenamiento del modelo:
+Se cambian los niveles de la variable objetivo "diagnosis" de 0 y 1 a "B" y "M" para facilitar la interpretación de los resultados y la visualización de las métricas de evaluación.
 
-Cambiamos los niveles del factor "diagnosis" a nombres válidos, en este caso "M" para los tumores malignos, "B" para aquellos benignos.
+```{r}
+data$diagnosis <- factor(data$diagnosis, levels = c(0, 1), labels = c("B", "M"))
+```
+
+
+Para poder evaluar el rendimiento de los modelos, es necesario establecer un punto de referencia o *baseline* que nos permita comparar su desempeño. En este caso, utilizaremos un enfoque simple basado en la clase mayoritaria, que consiste en predecir la clase más común en el conjunto de datos sin tener en cuenta ninguna característica predictiva. Este enfoque no es útil para la predicción real, pero nos proporcionará una referencia mínima para evaluar la eficacia de los modelos posteriores.
+
+En nuestro análisis, la clase mayoritaria se identifica como "Benigno" (B). Esto significa que, si utilizáramos este enfoque, todas las instancias se clasificarían como benignas, ignorando cualquier característica del conjunto de datos que pudiera diferenciar los casos malignos (M). Este enfoque nos proporciona una medida básica de rendimiento, incluyendo métricas como la *exactitud (accuracy)* y la sensibilidad para la clase mayoritaria.
+
+Si un modelo más avanzado no puede superar este baseline en métricas clave, como el área bajo la curva ROC (AUC-ROC) o la precisión general, entonces el modelo no estaría capturando patrones significativos en los datos. Por lo tanto, no sería útil para la clasificación de los tumores de mama.
+
+
+```{r}
+# Identificar la clase mayoritaria
+majority_class <- as.character(names(sort(table(data$diagnosis), decreasing = TRUE)[1]))
+
+# Predicción de la clase mayoritaria en todos los casos
+majority_predictions <- factor(rep(majority_class, nrow(data)), levels = levels(data$diagnosis))
+
+# Calcular las métricas para la clase mayoritaria
+conf_matrix_majority <- confusionMatrix(majority_predictions, data$diagnosis)
+
+# Resultados
+cat("Baseline: Predicción de la clase mayoritaria\n")
+print(conf_matrix_majority)
+```
+
 
 ```{r}
 
 
+# Calcular la probabilidad de cada clase basada en las frecuencias relativas
+class_probabilities <- prop.table(table(data$diagnosis))
 
-# Cambiamos los niveles del factor "diagnosis" de 0 y 1 a "B" y "M"
-data$diagnosis <- factor(data$diagnosis, levels = c(0, 1), labels = c("B", "M"))
+# Crear probabilidades para el baseline
+# La probabilidad de la clase "B" (mayoritaria) es constante y es igual a su frecuencia relativa
+baseline_probabilities <- rep(class_probabilities[majority_class], nrow(data))
+
+# Calcular el ROC y el AUC
+roc_curve <- roc(response = data$diagnosis, 
+                 predictor = baseline_probabilities, 
+                 levels = rev(levels(data$diagnosis)))
+
+cat("Valor del AUC-ROC para el baseline:", auc_value, "\n")
+
+
+
 ```
+Los resultados obtenidos para el baseline basado en la clase mayoritaria revelan las limitaciones de este enfoque simplista. El modelo clasifica correctamente todos los casos benignos (B), logrando una sensibilidad perfecta de 1.0 para esta clase. Sin embargo, su especificidad es 0.0, lo que indica que no logra identificar ningún caso maligno (M).
+
+La *exactitud* general del modelo es del 62.74%, lo que coincide con la proporción de la clase mayoritaria en el conjunto de datos. Este valor representa el *No Information Rate (NIR)*, o la precisión esperada si las predicciones se hicieran de manera aleatoria basándose únicamente en la distribución de clases. Además, el valor de kappa es 0, reflejando que las predicciones no aportan información más allá del azar.
+
+El resultado más preocupante es la incapacidad del modelo para identificar correctamente los casos malignos. Esto se evidencia por un *Valor Predictivo Positivo (PPV)* de 62.74%, pero un *Valor Predictivo Negativo (NPV)* indefinido (NaN), ya que nunca predice la clase M. Además, el área bajo la curva ROC (AUC-ROC) es de 0.5, lo que indica que el modelo no es capaz de discriminar entre las dos clases.
+
+este baseline denota la necesidad de utilizar modelos más avanzados que sean capaces de capturar patrones discriminativos en los datos para lograr un mejor equilibrio entre sensibilidad y especificidad. Este punto de partida servirá como referencia mínima para evaluar la eficacia de los modelos posteriores.
+
 
 #### 3.2.2.1 Árbol de Decisión (CART):
 
@@ -1037,3 +1091,12 @@ Filtramos las reglas basadas en el lift y la confianza, así solo se consideran 
 filtradas <- subset(reglasAsociacion, lift > 1.5 & confidence >= 0.8)
 inspect(filtradas)
 ```
+
+### 6. Conclusiones
+Hemos realizado un análisis completo de un conjunto de datos de cáncer de mama, incluyendo la exploración de datos, la construcción de modelos de aprendizaje supervisado y no supervisado, y la identificación de reglas de asociación. Algunos de los hallazgos clave incluyen:
+Detección de patrones de agrupación en los datos de cáncer de mama mediante técnicas de clustering y reducción de dimensionalidad. En los que 2 de los 4 clústeres identificados en el análisis no supervisado son 100% malignos, por lo que podrían ser de especial interés para futuros estudios.
+Identificación de reglas de asociación significativas entre las variables del conjunto de datos, lo que proporciona información valiosa sobre las relaciones entre las características de las células y el diagnóstico de cáncer de mama.
+Respecto al aprendizaje supervisado, hemos evaluado varios modelos, incluyendo Árboles de Decisión, Random Forest, SVM, Regresión Logística y Redes Neuronales. Los modelos Random Forest y SVM mostraron un rendimiento excepcional, con altas puntuaciones de AUC y sensibilidad. La reducción de variables menos importantes no afectó significativamente el rendimiento de los modelos, lo que sugiere que las variables eliminadas no aportaban información relevante pero tampoco introducían ruido probablemente debido a la alta correlación entre las variables.
+En general, este análisis proporciona información valiosa para la detección y el diagnóstico del cáncer de mama, y destaca la importancia de utilizar una variedad de técnicas de análisis de datos para obtener una comprensión completa de los patrones y relaciones en los datos.
+
+### 7. Referencias
