@@ -23,7 +23,7 @@ output: html_notebook
 
 ## Resumen
 
-Este proyecto tiene como objetivo la aplicación de técnicas de aprendizaje supervisado y no supervisado para el diagnóstico de cáncer de mama, utilizando un conjunto de datos que contiene características extraídas de imágenes de aspirado con aguja fina (FNA) de masas mamarias. El conjunto de datos contiene 569 muestras, con 357 benignas y 212 malignas, y 30 características numéricas que describen diversas propiedades de los núcleos celulares en las imágenes. En este estudio, se explorarán varios enfoques de clasificación supervisada, como **CART**, **Random Forest** y **SVM**, para predecir el diagnóstico de las muestras, además de aplicar técnicas no supervisadas como el **clustering** y la **reducción de dimensionalidad** a través de **PCA**. Se espera que el análisis combinado de ambos enfoques permita mejorar la precisión en el diagnóstico y proporcionar una mejor comprensión de los patrones subyacentes en los datos. **Se discutirán los resultados obtenidos y se presentarán conclusiones sobre la efectividad de las técnicas empleadas.**
+Este proyecto tiene como objetivo la aplicación de técnicas de aprendizaje supervisado y no supervisado para el diagnóstico de cáncer de mama, utilizando un conjunto de datos que contiene características extraídas de imágenes de aspirado con aguja fina (FNA) de masas mamarias. El conjunto de datos contiene 569 muestras, con 357 benignas y 212 malignas, y 33 características que describen diversas propiedades de los núcleos celulares en las imágenes. En este estudio, se explorarán varios enfoques de clasificación supervisada, como **CART**, **Random Forest** y **SVM**, para predecir el diagnóstico de las muestras, además de aplicar técnicas no supervisadas como el **clustering** y la **reducción de dimensionalidad** a través de **PCA**. Se espera que el análisis combinado de ambos enfoques permita mejorar la precisión en el diagnóstico y proporcionar una mejor comprensión de los patrones subyacentes en los datos. **Se discutirán los resultados obtenidos y se presentarán conclusiones sobre la efectividad de las técnicas empleadas.**
 
 ## 1. Introducción
 
@@ -41,7 +41,7 @@ En la **Figura 1** se ilustra el procedimiento de aspiración con aguja fina (FN
 <img src="images/cells.jpg" alt="Células extraídas de FNA" style="width: 35%;"/> <br> <b>Figura 2:</b><i> Células extraídas de FNA</i>
 :::
 
-El conjunto de datos incluye 30 características, como el radio, la textura, el perímetro y la simetría de los núcleos celulares, las cuales se utilizan para determinar si una muestra es **benigna** o **maligna**. El análisis se centra en la aplicación de técnicas de aprendizaje supervisado, como **CART**, **Random Forest** y **SVM**, para predecir el diagnóstico basado en las características numéricas. Además, se aplicarán técnicas de aprendizaje no supervisado, como el **clustering** y la **reducción de dimensionalidad** mediante **PCA** , para explorar los patrones ocultos en los datos y posiblemente mejorar la precisión de los modelos.
+El conjunto de datos incluye 33 características, como el radio, la textura, el perímetro y la simetría de los núcleos celulares, las cuales se utilizan para determinar si una muestra es **benigna** o **maligna**. El análisis se centra en la aplicación de técnicas de aprendizaje supervisado, como **CART**, **Random Forest** y **SVM**, para predecir el diagnóstico basado en las características numéricas. Además, se aplicarán técnicas de aprendizaje no supervisado, como el **clustering** y la **reducción de dimensionalidad** mediante **PCA** , para explorar los patrones ocultos en los datos y posiblemente mejorar la precisión de los modelos.
 
 ## 2. Metodología
 
@@ -88,6 +88,8 @@ Se instalan los paquetes que serán necesarios durante el proyecto:
 -   Ggplot2: Personalización de gráficas.
 -   Psych: Para análisis estadístico
 -   Corrplot: Visualización de matriz de correlación.
+-   Car:  Para complementar técnicas de regresión.
+-   pRoc: Proporciona herramientas para visualizar., suavizar y comparar curvas Roc.
 
 ```{r setup, warning=FALSE, message=FALSE}
 # Nota: Descomentar las líneas de instalación si no se tienen los paquetes instalados. Comando ctrl+shift+c para descomentar.
@@ -122,11 +124,11 @@ Para comenzar el análisis es necesario realizar la carga de los datos, se visua
 
 ```{r}
 data <- read.csv("data/data.csv")
-#hola
+
 head(data)
 ```
 
-El dataset cuenta con 33 columnas y 569 filas.
+
 
 ```{r}
 dim <- dim(data)
@@ -134,20 +136,14 @@ dim <- dim(data)
 cat("Número de columnas:", dim[2], "\n")
 cat("Número de filas:", dim[1], "\n")
 ```
+Como podemos observar, nuestro dataset cuenta con 569 filas y 33 columnas.
+
 
 A continuación, se muestra la estructura, tipos y algunos ejemplos de las variables del dataset para tener una visión global del las distintas variables con las que se cuenta.
 
 ```{r}
 str(data)
 ```
-
-Se visualiza un resumen estádistico de los datos.
-
-```{r}
-describe(data)
-```
-
-Se obtienen las clases de cada columna en el conjunto de datos para entender mejor su tipo de datos y estructura. Esto permite visualizar rápidamente el tipo de variable (numérica, categórica, etc.) que se encuentra en el dataset.
 
 ```{r}
 # sapply aplica una función a cada columna del dataframe
@@ -156,6 +152,17 @@ clases_df <- data.frame(Clase = clases)
 
 print(clases_df, row.names = FALSE)
 ```
+Se obtienen las clases de cada columna en el conjunto de datos para entender mejor su tipo de datos y estructura. Esto permite visualizar rápidamente el tipo de variable (numérica, categórica, etc.) que se encuentra en el dataset.
+
+
+Se visualiza un resumen estádistico de los datos.
+
+```{r}
+describe(data)
+```
+
+
+
 
 Se verifica si existen valores faltantes en los datos utilizando la función `anyNA()`. Esto permite identificar rápidamente si hay datos incompletos en el dataset que puedan requerir limpieza o manejo especial.
 
@@ -247,9 +254,10 @@ cat("Número de filas:", dim[1], "\n")
 
 Anteriormente, vimos que nuestro dataset cuenta con una única columna de valores categóricos, "Diagnosis", cuyos valores tienen el siguiente significado: - M (malignant) - B (benign)
 
-El siguiente paso en el preprocesado de datos será pasar esta columna a numérica. Como solo se presentan dos posibles valores ("M" y "B"), se aplicará Codificación Binaria: El valor "M" pasará a ser 1 y valor "B" pasará a ser 0.
+El siguiente paso en el preprocesado de datos será pasar esta columna a numérica, lo que será necesario para estudiar la correlación de variables de nuestro dataset. 
 
-Aunque más adelante se volverá a pasar a categórica, ahora es necesario hacerla binaria para poder estudiar la correlación de las variables.
+Como solo se presentan dos posibles valores ("M" y "B"), se aplicará Codificación Binaria: El valor "M" pasará a ser 1 y valor "B" pasará a ser 0.
+
 
 ```{r}
 
@@ -265,7 +273,7 @@ print("Valores de la columna 'diagnosis' después de la codificación:")
 data$diagnosis
 ```
 
-A continuación, se verifica que todas las columnas del dataset sean numéricas, ya que algunos modelos de aprendizaje automático requieren que todas las variables de entrada sean numéricas. Para ello, se identifican las columnas categóricas y se comprueba que todas las columnas sean numéricas.
+A continuación, se verifica que todas las columnas del dataset sean numéricas, ya que algunos modelos de aprendizaje automático requieren que todas las variables de entrada lo sean. Para ello, se identifican las columnas categóricas y se comprueba que todas las columnas sean numéricas.
 
 ```{r}
 
@@ -279,7 +287,7 @@ Efectivamente, todas las columnas ahora son numéricas, lo que da paso al siguie
 
 ##### 3.1.4.3. Estudio de correlación.
 
-Al tener el dataset limpio de NA y solo presentes variables numéricas, el siguiente paso será estudiar las posibles correlaciones de nuestro dataset.
+Al tener el dataset limpio de valores faltantes, NA, y solo hay presentes variables numéricas, el siguiente paso será estudiar las posibles correlaciones de nuestro dataset.
 
 Estudiar la correlación de los datos ayuda a identificar patrones y relaciones entre variables, lo que podría conducir a nuevas hipótesis y descubrimientos. Además, un buen estudio de correlaciones podría ser útil para seleccionar variables relevantes y construir modelos en un futuro.
 
@@ -337,8 +345,8 @@ Las variables menos correlacionadas con **'diagnosis'** son **symmetry_se** (-0.
 ##### 3.1.4.4. Selección de Atributos
 
 La selección de atributos se refiere al proceso de identificar y elegir las variables más relevantes para un análisis, descartando las redundantes o irrelevantes para mejorar la calidad y eficiencia del modelo. En este caso, dado que algunas variables en el dataset muestran altas correlaciones entre sí, se podría considerar eliminarlas para reducir la dimensionalidad y simplificar el análisis.
-
-A pesar de las correlaciones fuertes entre ciertas variables, eliminar algunas no es adecuado ya que el conjunto de datos es limitado. La eliminación de variables podría llevar a una pérdida significativa de información valiosa que podría ser crucial para el análisis y las predicciones. Mantener todas las variables como "area_mean" o "perimeter_mean" aporta información única y valiosa al modelo, lo que permite capturar un panorama más completo del tumor.
+88
+A pesar de las correlaciones fuertes entre ciertas variables, ninguna es mayor de 0,8-0.9 por lo que eliminarlas podría no ser adecuado ya que el conjunto de datos es limitado. La eliminación de variables podría llevar a una pérdida significativa de información valiosa que podría ser crucial para el análisis y las predicciones. Mantener todas las variables como "area_mean" o "perimeter_mean" aporta información única y valiosa al modelo, lo que permite capturar un panorama más completo del tumor.
 
 Por lo tanto, se optará por mantener todas las variables.
 
@@ -350,7 +358,7 @@ A medida que se introducen datos en el modelo, este ajusta sus ponderaciones ite
 
 En este análisis, la variable a predecir será "diagnosis", que como se mencionó previamente, es binaria: 1 si el tumor es maligno y 0 si es benigno.
 
-Se evaluaron diferentes modelos de clasificación para un conjunto de datos binario con 569 muestras y 30 predictores, categorizados en 'Negative' y 'Positive'. Los modelos analizados incluyen el Árbol de Decisión (CART), Random Forest (Bosque Aleatorio), Máquinas de Soporte Vectorial con núcleo Radial (SVM), Modelo Lineal Generalizado (GLM) y un clasificador con redes neuronales.
+Se evaluaron diferentes modelos de clasificación para un conjunto de datos con 569 muestras y 30 variables, categorizados en 'Benigno' y 'Maligno'. Los modelos analizados incluyen el Árbol de Decisión (CART), Random Forest (Bosque Aleatorio), Máquinas de Soporte Vectorial con núcleo Radial (SVM), Modelo Lineal Generalizado (GLM) y un clasificador con redes neuronales.
 
 El primer paso en el análisis supervisado es realizar la división del dataset.
 
@@ -358,7 +366,7 @@ El primer paso en el análisis supervisado es realizar la división del dataset.
 
 Para este paso, se utilizará la validación cruzada K-fold para dividir el dataset y evaluar el modelo. En lugar de una división simple en entrenamiento y prueba, K-fold asegura que cada subconjunto o fold del dataset sea utilizado tanto para el entrenamiento como para la prueba en diferentes iteraciones, proporcionando así una evaluación más robusta.
 
-Establecemos una semilla para asegurar que los resultados sean reproducibles, es decir, que los mismos resultados se obtengan cada vez que se ejecute el código. Luego, configuramos el K-fold Cross-Validation con probabilidades de clase, que nos permitirá evaluar los modelos utilizando métricas de clasificación binaria.
+Establecemos una semilla para asegurar que los resultados sean reproducibles, es decir, que se obtengan los mismos resultados cada vez que se ejecute el código. Luego, configuramos el K-fold Cross-Validation con probabilidades de clase, que nos permitirá evaluar los modelos utilizando métricas de clasificación binaria.
 
 ```{r}
 set.seed(123)
@@ -493,7 +501,7 @@ Random Forest, muestra un desempeño destacable. Este modelo seleccionó el valo
 
 #### 3.2.4. Support Vector Machine (SVM)
 
-El Support Vector Machine (SVM) es un algoritmo que intenta encontrar un hiperplano que mejor separe las diferentes clases de datos.
+El Support Vector Machine (SVM) es un algoritmo que intenta encontrar el hiperplano que mejor separe las diferentes clases de datos.
 
 ```{r}
 #install.packages("kernlab")
@@ -573,10 +581,7 @@ importance_nn_df$variable <- rownames(importance_nn_df)
 
 
 ```
-
-### 3.3. Experimentación de modelos supervisados con reducción de variables
-
-En esta sección, se experimentará con la reducción de variables para evaluar si es posible mejorar el rendimiento de los modelos de aprendizaje supervisado. La reducción de variables implica seleccionar un subconjunto de características más relevantes y eliminar las menos importantes, lo que puede simplificar el modelo y mejorar su capacidad predictiva. \#### 3.3.1. Evaluación de los modelos
+#### 3.2.7 Evaluación de los modelos
 
 Esta sección se dedica a evaluar el rendimiento de los modelos utilizados en el análisis. La comparación de modelos se realiza utilizando técnicas de validación cruzada, como K-fold, para obtener una visión robusta del desempeño de cada uno. Los resultados obtenidos de estos modelos se comparan a través del resumen de resampling y se visualizan mediante el diagrama bwplot para identificar cuál modelo ofrece mejor precisión y generalización en las predicciones.
 
@@ -592,9 +597,14 @@ Se observa que el mejor modelo es el "SVM" ya que tiene el valor más alto de AU
 
 Redes neuronales tambien cuenta con buen desempeño aunque con menor sensibilidad y especificidad que los modelos anteriores. Logit y CART presentan un rendimiento inferior en comparación con los otros modelos.
 
+### 3.3. Experimentación de modelos supervisados con reducción de variables
+
+En esta sección, se experimentará con la reducción de variables para evaluar si es posible mejorar el rendimiento de los modelos de aprendizaje supervisado. La reducción de variables implica seleccionar un subconjunto de características más relevantes y eliminar las menos importantes, lo que puede simplificar el modelo y mejorar su capacidad predictiva. 
+
+
 Se procederá a realizar un estudio de la importancia de las variables para identificar cuáles son las características más relevantes en la predicción del diagnóstico de cáncer de mama y así poder seleccionar las más importantes para mejorar el rendimiento de los modelos.
 
-#### 3.3.2. Estudio de la Importancia de las Variables
+#### 3.3.1. Estudio de la Importancia de las Variables
 
 El estudio de la importancia de variables nos permite identificar cuáles son las características que más influyen en las predicciones realizadas.
 
@@ -602,7 +612,7 @@ El objetivo del estudio de importancia de variables es eliminar aquellas que con
 
 1- Obtener la importancia de variables de cada modelo. 2- Normalizar la importancia para compararla entre modelos. 3- Calcular una métrica consolidada de importancia promedio. 4- Identificar las variables con menor impacto en todos los modelos.
 
-##### 3.3.2.1. Árbol de Decisión (CART)
+##### 3.3.1.1. Árbol de Decisión (CART)
 
 En los árboles de decisión, la importancia de vairables se calcula en función de las ganancias de reducción de impureza, por ejemplo, la reducción de la entropía o del índice Gini en los nodos donde la variables es utilizada para dividr los datos.
 
@@ -612,7 +622,7 @@ plot(importance_cart, main = "Importancia de Variables - CART")
 
 Las variables con mayor importancia en el modelo CART son "concave.points_worst", "concave.points_mean", "radius_worst", "area_worst" y "perimeter_worst". Estas variables son las más influyentes en la predicción del diagnóstico de cáncer de mama, lo que sugiere que las características relacionadas con los puntos cóncavos, el radio, el área y el perímetro del tumor son críticas para distinguir entre tumores malignos y benignos.
 
-##### 3.3.2.2. Random Forest
+##### 3.3.1.2. Random Forest
 
 En Random Forest la importancia se calcula mediante dos enfoques comunes:
 
@@ -625,7 +635,7 @@ plot(importance_rf, main = "Importancia de Variables - Random Forest")
 
 En este caso las variables más importantes son similares al modelo anterior.
 
-##### 3.3.2.3. Support Vector Machine (SVM)
+##### 3.3.1.3. Support Vector Machine (SVM)
 
 El calculo de la importancia en SVM no es tan directo, ya que este modelo no se basa en una estructura jerárquica o en una gregación de árboles. Podemos estimar la importancia de las variables mediante análisis post-hoc, como la evaluación de los coeficientes en el espacio formado por el núcleo radial.
 
@@ -635,7 +645,7 @@ plot(importance_svm, main = "Importancia de Variables- SVM")
 
 Al igual que en los modelos anteriores, parece que las variables de peor y media de perimetro radio area y concavidad son las más importantes en la predicción del diagnóstico de cáncer de mama.
 
-##### 3.3.2.4. Regresión Logística
+##### 3.3.1.4. Regresión Logística
 
 En regresión logística, la importancia de variables se puede analizar mediante los coeficientes estimados del modelo. Estos coeficientes indican la magnitud y la dirección del efecto de cada variable en la probabilidad de que un tumor sea maligno.
 
@@ -645,7 +655,7 @@ plot(importance_logit, main = "Importancia de Variables - GLM")
 
 En este caso la simetría toma un papel importante en la predicción del diagnóstico de cáncer de mama.
 
-##### 3.3.2.5 Red Neuronal
+##### 3.3.1.5 Red Neuronal
 
 En las redes neuronales, la importancia de las variables puede ser más difícil de interpretar debido a la complejidad del modelo. Sin embargo, es posible analizar la contribución de cada variable a la salida de la red mediante técnicas de backpropagation y análisis de sensibilidad.
 
@@ -694,9 +704,9 @@ print(dim(data_reduced))
 
 ```
 
-Como se puede observar, las variables menos importantes en los modelos evaluados son "symmetry_se", "fractal_dimension_se", "texture_se", "smoothness_se" y "fractal_dimension_mean". Estas variables tienen una baja contribución a la predicción del diagnóstico en comparación con otras características más relevantes, como el tamaño y la forma del tumor. El dataset reducido contiene 26 variables.
+Como se puede observar, las variables menos importantes en los modelos evaluados son "symmetry_se", "fractal_dimension_se", "texture_se", "smoothness_se" y "fractal_dimension_mean". Estas variables tienen una baja contribución a la predicción del diagnóstico en comparación con otras características más relevantes, como el tamaño y la forma del tumor. El dataset reducido contiene 25 variables.
 
-#### 3.3.3. Entrenamiento de Modelos con Dataset Reducido
+#### 3.3.2. Entrenamiento de Modelos con Dataset Reducido
 
 El siguiente paso será repetir el análisis supervisado esta vez usando el dataset reducido en el que no aparecen las columnas "menos importantes". De esta forma podremos analizar si los resultados mejorar, empeoran o no afectan con el estudio de importancia de varianles:
 
@@ -781,7 +791,7 @@ model_nn_reduced <- train(
 
 ```
 
-#### 3.3.4. Comparación de resultados análisis supervisado dataset incial vs dataset reducido:
+#### 3.3.3. Comparación de resultados análisis supervisado dataset incial vs dataset reducido:
 
 A continuación, se compararán los resultados de los modelos entrenados con el dataset completo y el dataset reducido. Se evaluarán las métricas de rendimiento, como el área bajo la curva ROC (AUC-ROC), la sensibilidad y la especificidad, para determinar si la reducción de variables afecta el rendimiento de los modelos.
 
@@ -863,7 +873,7 @@ data_UnSupervised$diagnosis
 La normalización asegura que las variables con diferentes unidades de medida no dominen el análisis y evita que el algoritmo de clustering o reducción de dimensionalidad se vea sesgado por la magnitud de las variables. Se utiliza la función preProcess para calcular los parámetros de normalización y con la función predict, se aplican los parámetros calculados previamente al conjunto de datos, generando una nueva versión normalizada de las características
 
 ```{r}
-# Normalizar los datos (sin la variable de respuesta si existe)
+# Normalizar los datos 
 preprocess_params <- preProcess(data_UnSupervised[, -ncol(data_UnSupervised)], method = c("center", "scale"))
 data_normalized <- predict(preprocess_params, data_UnSupervised[, -ncol(data_UnSupervised)])
 
