@@ -71,7 +71,7 @@ El desarrollo de este proyecto se llevará a cabo a través de un enfoque estruc
 5.  **Presentación de los Resultados y Conclusiones**\
     Finalmente, se presentarán los **resultados** obtenidos de los modelos evaluados, incluyendo tablas, gráficos y análisis comparativos. En esta sección se discutirá la efectividad de las técnicas empleadas, destacando los modelos más precisos y los enfoques que mejor se ajustan a las necesidades del diagnóstico de cáncer de mama. Las **conclusiones** se centrarán en la viabilidad y los posibles pasos a seguir para mejorar el rendimiento del modelo y su aplicabilidad en un entorno clínico.
 
-## 3. Desarrollo
+## 3. Implementación
 
 En esta sección se muestran los pasos que se han seguido para la realización del proyecto. Incluye el Análisis Inicial y Preprocesamiento de los Datos, los modelos supervisados y no supervisados utilizados.
 
@@ -203,7 +203,7 @@ plot_histogram(data)
 Como se puede observar, las variables numéricas presentan diferentes distribuciones y rangos de valores. Algunas variables, como "concave.points_worst", parecen tener una distribución sesgada hacia la derecha, mientras que otras, como "symmetry_mean", parecen tener una distribución más simétrica. Estas diferencias en las distribuciones pueden ser útiles para identificar patrones y relaciones entre las variables.
 
 
-#### 3.1.4. Preprocesamiento de los datos
+##### 3.1.4. Preprocesamiento de los datos
 Es necesario realizar un preprocesamiento de los datos para limpiarlos y prepararlos para el análisis y modelado. Esto incluye la eliminación de valores faltantes, la codificación de variables categóricas y la selección de atributos relevantes.
 
 ##### 3.1.4.1. Eliminación de valores faltantes
@@ -360,7 +360,7 @@ Se evaluaron diferentes modelos de clasificación para un conjunto de datos bina
 El primer paso en el análisis supervisado es realizar la división del dataset.
 
 
-#### 3.2.1 División del Dataset:
+#### 3.2.1. División del Dataset:
 
 Para este paso, se utilizará la validación cruzada K-fold para dividir el dataset y evaluar el modelo. En lugar de una división simple en entrenamiento y prueba, K-fold asegura que cada subconjunto o fold del dataset sea utilizado tanto para el entrenamiento como para la prueba en diferentes iteraciones, proporcionando así una evaluación más robusta.
 
@@ -395,6 +395,11 @@ En nuestro análisis, la clase mayoritaria se identifica como "Benigno" (B). Est
 
 Si un modelo más avanzado no puede superar este baseline en métricas clave, como el área bajo la curva ROC (AUC-ROC) o la precisión general, entonces el modelo no estaría capturando patrones significativos en los datos. Por lo tanto, no sería útil para la clasificación de los tumores de mama.
 
+El ROC muestra la tasa de verdaderos positivos frente a la tasa de falsos positivos a diferentes umbrales de clasificación, mientras que el AUC proporciona un único valor que resume el rendimiento del modelo en términos de probabilidad de clasificación. Estos valores se utilizarán posteriormente para comparar con otros modelos, ayudando a evaluar cuál proporciona las mejores predicciones en términos de sensibilidad y especificidad.
+
+
+Para el baseline se identifica a continuación la clase mayoritaria en el dataset. Luego se predice esta clase en todos los casos y se calcula la matriz de confusión para evaluar el desempeño de la predicción basada en la clase mayoritaria.
+
 
 ```{r}
 # Identificar la clase mayoritaria
@@ -403,23 +408,20 @@ majority_class <- as.character(names(sort(table(data$diagnosis), decreasing = TR
 # Predicción de la clase mayoritaria en todos los casos
 majority_predictions <- factor(rep(majority_class, nrow(data)), levels = levels(data$diagnosis))
 
-# Calcular las métricas para la clase mayoritaria
 conf_matrix_majority <- confusionMatrix(majority_predictions, data$diagnosis)
-
-# Resultados
 cat("Baseline: Predicción de la clase mayoritaria\n")
 print(conf_matrix_majority)
 ```
 
+Se calcula el valor del ROC (Receiver Operating Characteristic) y el AUC (Área Bajo la Curva) para evaluar el rendimiento de la predicción basada en la clase mayoritaria.
 
-```{r}
+```{r warning=FALSE}
 
 
 # Calcular la probabilidad de cada clase basada en las frecuencias relativas
 class_probabilities <- prop.table(table(data$diagnosis))
 
 # Crear probabilidades para el baseline
-# La probabilidad de la clase "B" (mayoritaria) es constante y es igual a su frecuencia relativa
 baseline_probabilities <- rep(class_probabilities[majority_class], nrow(data))
 
 # Calcular el ROC y el AUC
@@ -429,19 +431,17 @@ roc_curve <- roc(response = data$diagnosis,
 
 cat("Valor del AUC-ROC para el baseline:", auc_value, "\n")
 
-
-
 ```
 Los resultados obtenidos para el baseline basado en la clase mayoritaria revelan las limitaciones de este enfoque simplista. El modelo clasifica correctamente todos los casos benignos (B), logrando una sensibilidad perfecta de 1.0 para esta clase. Sin embargo, su especificidad es 0.0, lo que indica que no logra identificar ningún caso maligno (M).
 
 La *exactitud* general del modelo es del 62.74%, lo que coincide con la proporción de la clase mayoritaria en el conjunto de datos. Este valor representa el *No Information Rate (NIR)*, o la precisión esperada si las predicciones se hicieran de manera aleatoria basándose únicamente en la distribución de clases. Además, el valor de kappa es 0, reflejando que las predicciones no aportan información más allá del azar.
 
-El resultado más preocupante es la incapacidad del modelo para identificar correctamente los casos malignos. Esto se evidencia por un *Valor Predictivo Positivo (PPV)* de 62.74%, pero un *Valor Predictivo Negativo (NPV)* indefinido (NaN), ya que nunca predice la clase M. Además, el área bajo la curva ROC (AUC-ROC) es de 0.5, lo que indica que el modelo no es capaz de discriminar entre las dos clases.
+El resultado más significativo es la incapacidad del modelo para identificar correctamente los casos malignos. Esto se evidencia por un *Valor Predictivo Positivo (PPV)* de 62.74%, pero un *Valor Predictivo Negativo (NPV)* indefinido (NaN), ya que nunca predice la clase M. Además, el área bajo la curva ROC (AUC-ROC) es de 0.5, lo que indica que el modelo no es capaz de discriminar entre las dos clases.
 
-este baseline denota la necesidad de utilizar modelos más avanzados que sean capaces de capturar patrones discriminativos en los datos para lograr un mejor equilibrio entre sensibilidad y especificidad. Este punto de partida servirá como referencia mínima para evaluar la eficacia de los modelos posteriores.
+Este baseline denota la necesidad de utilizar modelos más avanzados que sean capaces de capturar patrones discriminativos en los datos para lograr un mejor equilibrio entre sensibilidad y especificidad. Este punto de partida servirá como referencia mínima para evaluar la eficacia de los modelos posteriores.
 
 
-#### 3.2.2.1 Árbol de Decisión (CART):
+#### 3.2.2. Árbol de Decisión (CART):
 
 El árbol de decisión es un modelo simple que divide los datos en segmentos basados en reglas de decisión. Es útil para clasificaciones donde las decisiones son lógicas y fáciles de entender
 
@@ -474,9 +474,8 @@ La sensibilidad (capacidad del modelo para identificar correctamente las observa
 
 Este desempeño es sólido y equilibrado, pero no es el más alto entre los modelos evaluados.
 
-```         
-#### 3.2.2.2 Random Forest  
-```
+    
+#### 3.2.4. Random Forest  
 
 El Random Forest es un algoritmo que construye múltiples árboles de decisión y realiza una predicción agregando las predicciones de todos los árboles individuales. Es robusto ante el sobreajuste.
 
@@ -503,7 +502,7 @@ Para entender mejor los resultados del modelo, aclarar que el parámetro mtry en
 
 Random Forest, muestra un desempeño destacable. Este modelo seleccionó el valor de mtry (número de variables aleatorias para cada división del árbol) igual a 2, lo que optimiza la capacidad de discriminación. Su curva ROC alcanza un valor impresionante de 0.9908, lo que es un indicador claro de su capacidad para separar las dos clases con gran precisión. Además, la sensibilidad de 0.9804 muestra que Random Forest tiene una excelente capacidad para detectar correctamente las observaciones positivas, y la especificidad de 0.9241 indica que también es eficaz en identificar las observaciones negativas. Este modelo sobresale por su alta precisión en ambos aspectos, lo que lo convierte en uno de los modelos más robustos y confiables para este conjunto de datos.
 
-#### 3.2.2.3 Support Vector Machine (SVM)
+#### 3.2.5. Support Vector Machine (SVM)
 
 El Support Vector Machine (SVM) es un algoritmo que intenta encontrar un hiperplano que mejor separe las diferentes clases de datos.
 
@@ -531,7 +530,7 @@ importance_svm_df$variable <- rownames(importance_svm_df)
 
 El tercer modelo evaluado es el de Máquinas de Soporte Vectorial con núcleo Radial (SVM). Este modelo, con un parámetro de regularización 𝐶=1 y un valor de sigma de 0.0475, mostró un desempeño excelente en términos de la curva ROC, alcanzando un valor de 0.9948, el más alto entre todos los modelos. Esta métrica refleja una capacidad de discriminación superior, lo que implica que el modelo tiene una alta habilidad para separar correctamente las clases 'Negative' y 'Positive'. La sensibilidad de 0.9748 y la especificidad de 0.9670 también son notablemente altas, lo que sugiere que el modelo tiene un buen rendimiento tanto en la detección de las observaciones positivas como en la correcta identificación de las negativas. Sin embargo, es importante destacar que el modelo SVM presentó varias advertencias durante el proceso de optimización (warnings), relacionadas con problemas de convergencia y probabilidades extremas de 0 o 1. Esto podría indicar que el modelo podría estar sobreajustando o enfrentando dificultades para encontrar un equilibrio estable, lo que debe tenerse en cuenta al evaluar su estabilidad y generalización.
 
-#### 3.2.2.4 Regresión Logística
+#### 3.2.6. Regresión Logística
 
 Este algoritmo es un modelo de clasificación que predice la probabilidad de que una observación pertenzca a una clase o no.
 
@@ -558,7 +557,7 @@ importance_logit_df$variable <- rownames(importance_logit_df)
 
 El último modelo considerado es el Modelo Lineal Generalizado (GLM). Este modelo, a pesar de ser sencillo en su estructura, mostró un rendimiento respetable. Su curva ROC alcanzó un valor de 0.9552, lo cual es inferior a los de Random Forest y SVM, pero sigue siendo adecuado para tareas de clasificación. La sensibilidad de 0.9438 indica que el modelo tiene una buena capacidad para identificar las observaciones positivas, mientras que la especificidad de 0.9484 es ligeramente mejor que la sensibilidad, lo que sugiere que el modelo tiene un desempeño ligeramente mejor para detectar las observaciones negativas en comparación con las positivas. Aunque el modelo GLM es funcional, su rendimiento en términos de la curva ROC es algo inferior en comparación con los modelos más complejos como SVM y Random Forest.
 
-#### 3.2.2.5 Red Neuronal
+#### 3.2.7. Red Neuronal
 
 Las redes neuronales son un modelo de aprendizaje profundo que imita el funcionamiento del cerebro humano. Están compuestas por capas de neuronas interconectadas que procesan la información y aprenden a partir de los datos. Puede ser interesante evaluar el rendimiento de una red neuronal en comparación con los modelos tradicionales de aprendizaje supervisado.
 
@@ -585,38 +584,48 @@ importance_nn_df$variable <- rownames(importance_nn_df)
 
 
 ```
+### 3.3. Experimentación de modelos supervisados con reducción de variables
 
-#### 2.3 Comparación de Modelos
+En esta sección, se experimentará con la reducción de variables para evaluar si es posible mejorar el rendimiento de los modelos de aprendizaje supervisado. La reducción de variables implica seleccionar un subconjunto de características más relevantes y eliminar las menos importantes, lo que puede simplificar el modelo y mejorar su capacidad predictiva.
+#### 3.3.1. Evaluación de los modelos
+
+Esta sección se dedica a evaluar el rendimiento de los modelos utilizados en el análisis. La comparación de modelos se realiza utilizando técnicas de validación cruzada, como K-fold, para obtener una visión robusta del desempeño de cada uno. Los resultados obtenidos de estos modelos se comparan a través del resumen de resampling y se visualizan mediante el diagrama bwplot para identificar cuál modelo ofrece mejor precisión y generalización en las predicciones.
 
 ```{r}
-# Comparar el rendimiento de los modelos
 resamples <- resamples(list(cart = model_cart, rf = model_rf, svm = model_svm, logit = model_logit, nn = model_nn))
 
-# Ver el resumen de la comparación entre los modelos
 summary(resamples)
-
-# Visualización de la comparación
 bwplot(resamples)
 
 ```
+Se observa que el mejor modelo es el "SVM" ya que tiene el valor más alto de AUC-ROC, además de tener una alta sensibilidad y especificidad. El modelo "Random Forest" también tiene un buen rendimiento, pero la especificidad no es tan alta probablemente por el outlier que se observa en el diagrama bwplot. 
 
-#### 2.4 Estudio de la Importancia de las Variables
+Redes neuronales tambien cuenta con buen desempeño aunque con menor sensibilidad y especificidad que los modelos anteriores. Logit y CART presentan un rendimiento inferior en comparación con los otros modelos.
 
-El estudio de la importancia de variables nos permite identificar cuáles son las características que más influyen en las predicciones realizadas. Esto es especialmente útil cuando trabjamos con datos de ámbito sanitario, ya que nos permite priorizar las variables más relevantes para realizar diagnósticos o tomar decisiones informadas.
+Se procederá a realizar un estudio de la importancia de las variables para identificar cuáles son las características más relevantes en la predicción del diagnóstico de cáncer de mama y así poder seleccionar las más importantes para mejorar el rendimiento de los modelos.
+
+
+#### 3.3.2. Estudio de la Importancia de las Variables
+
+El estudio de la importancia de variables nos permite identificar cuáles son las características que más influyen en las predicciones realizadas.
 
 El objetivo del estudio de importancia de variables es eliminar aquellas que consistentemente tienen baja importancia en todos los modelos:
 
 1- Obtener la importancia de variables de cada modelo.
+2- Normalizar la importancia para compararla entre modelos.
+3- Calcular una métrica consolidada de importancia promedio.
+4- Identificar las variables con menor impacto en todos los modelos.
 
-#### 2.4.1 Estudio de la Importancia de las Variables con Árbol de Decisión (CART)
+##### 3.3.2.1. Árbol de Decisión (CART)
 
 En los árboles de decisión, la importancia de vairables se calcula en función de las ganancias de reducción de impureza, por ejemplo, la reducción de la entropía o del índice Gini en los nodos donde la variables es utilizada para dividr los datos.
 
 ```{r}
 plot(importance_cart, main = "Importancia de Variables - CART")
 ```
+Las variables con mayor importancia en el modelo CART son "concave.points_worst", "concave.points_mean",  "radius_worst", "area_worst" y "perimeter_worst". Estas variables son las más influyentes en la predicción del diagnóstico de cáncer de mama, lo que sugiere que las características relacionadas con los puntos cóncavos, el radio, el área y el perímetro del tumor son críticas para distinguir entre tumores malignos y benignos.
 
-#### 2.4.2 Estudio de la Importancia de las Variables con Random Forest
+##### 3.3.2.2. Random Forest
 
 En Random Forest la importancia se calcula mediante dos enfoques comunes:
 
@@ -626,34 +635,37 @@ En Random Forest la importancia se calcula mediante dos enfoques comunes:
 ```{r}
 plot(importance_rf, main = "Importancia de Variables - Random Forest")
 ```
+En este caso las variables más importantes son similares al modelo anterior.
 
-#### 2.4.3 Estudio de la Importancia de las Variables con Support Vector Machine (SVM)
+##### 3.3.2.3. Support Vector Machine (SVM)
 
 El calculo de la importancia en SVM no es tan directo, ya que este modelo no se basa en una estructura jerárquica o en una gregación de árboles. Podemos estimar la importancia de las variables mediante análisis post-hoc, como la evaluación de los coeficientes en el espacio formado por el núcleo radial.
 
 ```{r}
 plot(importance_svm, main = "Importancia de Variables- SVM")
 ```
+Al igual que en los modelos anteriores, parece que las variables de peor y media de perimetro radio area y concavidad son las más importantes en la predicción del diagnóstico de cáncer de mama.
 
-#### 2.4.4 Estudio de la Importancia de las Variables con Regresión Logística
+##### 3.3.2.4. Regresión Logística
 
 En regresión logística, la importancia de variables se puede analizar mediante los coeficientes estimados del modelo. Estos coeficientes indican la magnitud y la dirección del efecto de cada variable en la probabilidad de que un tumor sea maligno.
 
 ```{r}
 plot(importance_logit, main = "Importancia de Variables - GLM")
 ```
+En este caso la simetría toma un papel importante en la predicción del diagnóstico de cáncer de mama.
 
-#### 2.4.5 Estudio de la Importancia de las Variables con Red Neuronal
+##### 3.3.2.5 Red Neuronal
 
 En las redes neuronales, la importancia de las variables puede ser más difícil de interpretar debido a la complejidad del modelo. Sin embargo, es posible analizar la contribución de cada variable a la salida de la red mediante técnicas de backpropagation y análisis de sensibilidad.
 
 ```{r}
 plot(importance_nn, main = "Importancia de Variables - Red Neuronal")
 ```
+Al igual que en los modelos anteriores, las variables relacionadas con el tamaño y la forma del tumor, como el radio, el área y el perímetro, parecen ser las más influyentes en la predicción del diagnóstico de cáncer de mama.
 
-#### 2.4.4 Comparación General del estudio de la Importancia de las Variables
 
-2- Normalizar la importancia para compararla entre modelos. 3- Calcular una métrica consolidada de importancia promedio. 4- Identificar las variables con menor impacto en todos los modelos.
+Para **normalizar la importancia** y poder compararla entre modelos, se debe calcular la **importancia relativa** de cada variable en términos de contribución a la predicción del modelo. Esto permite **estandarizar las mediciones** y hacerlas comparables, independientemente del modelo o del algoritmo usado. Luego, se calcula una **métrica consolidada** que represente la **importancia promedio** de las variables en todos los modelos. Este valor consolidado se obtiene al promediar las **importancias individuales** de cada variable entre los diferentes modelos. Por último, se identifican las **variables con menor impacto** en todos los modelos al analizar aquellas que tienen una importancia **significativamente baja** en comparación con otras.
 
 ```{r}
 # Consolidar importancia de variables
@@ -681,25 +693,23 @@ write.csv(data_reduced, "data_reduced.csv", row.names = FALSE)
 
 ```
 
+A continuación, se presentan las variables menos importantes en los modelos evaluados y el dataset reducido.
 ```{r}
-data_reduced
-dim(data_reduced)
+print("Variables menos importantes:")
+print(least_important_vars)
+print("")
+print("Dataset reducido:")
+print(dim(data_reduced))
 
 ```
+Como se puede observar, las variables menos importantes en los modelos evaluados son "symmetry_se", "fractal_dimension_se", "texture_se", "smoothness_se" y "fractal_dimension_mean". Estas variables tienen una baja contribución a la predicción del diagnóstico en comparación con otras características más relevantes, como el tamaño y la forma del tumor. El dataset reducido contiene 26 variables.
 
-```{r}
-colnames(data_reduced)
-```
+#### 3.3.3. Entrenamiento de Modelos con Dataset Reducido
 
-```{r}
-colnames(data)
-```
+El siguiente paso será repetir el análisis supervisado esta vez usando el dataset reducido en el que no aparecen las columnas "menos importantes". De esta forma podremos analizar si los resultados mejorar, empeoran o no afectan con el estudio de importancia de varianles:
 
-El siguiente paso será repetir nuestro análisis supervisado esta vez usando el dataset reducido en el que no aparecen las columnas "menos importantes". De esta forma podremos analizar si los resultados mejorar, empeoran o no afectan con el estudio de importancia de varianles:
 
-#### 3. Análisis Supervisado con dataset reducido.
-
-#### 3.1 Árbol de Decisión (CART)
+**Árbol de Decisión (CART)**
 
 ```{r}
 # Árbol de Decisión utilizando K-fold cross-validation
@@ -715,7 +725,7 @@ model_cart_reduced <- train(
 print(model_cart_reduced)
 ```
 
-#### 3.2 Random Forest
+**Random Forest**
 
 ```{r}
 model_rf_reduced <- train(
@@ -731,7 +741,7 @@ print(model_rf_reduced)
 
 ```
 
-#### 3.3 Support Vector Machine (SVM)
+**Support Vector Machine (SVM)**
 
 ```{r}
 #install.packages("kernlab")
@@ -750,7 +760,7 @@ print(model_svm_reduced)
 
 ```
 
-#### 3.4 Regresión Logística
+**Regresión Logística**
 
 ```{r}
 model_logit_reduced <- train(
@@ -765,7 +775,7 @@ model_logit_reduced <- train(
 print(model_logit_reduced)
 ```
 
-#### 3.5 Red Neuronal
+**Red Neuronal**
 
 ```{r}
 # Entrenar una red neuronal para clasificación binaria
@@ -780,7 +790,9 @@ model_nn_reduced <- train(
 
 ```
 
-#### 3.5 Comparación de resultados análisis supervisado dataset incial vs dataset reducido:
+#### 3.3.4. Comparación de resultados análisis supervisado dataset incial vs dataset reducido:
+
+A continuación, se compararán los resultados de los modelos entrenados con el dataset completo y el dataset reducido. Se evaluarán las métricas de rendimiento, como el área bajo la curva ROC (AUC-ROC), la sensibilidad y la especificidad, para determinar si la reducción de variables afecta el rendimiento de los modelos.
 
 ```{r}
 # Comparativa entre los modelos
@@ -835,52 +847,21 @@ comparativa <- resultados %>%
   ) %>%
   select(modelo, roc_change, sens_change, spec_change)
 
-print(comparativa)
+flextable(comparativa)
 
 ```
 
-```{r}
-# Instalar flextable si no está instalado
-install.packages("flextable")
 
-# Cargar la librería
-library(flextable)
 
-# Crear la tabla con flextable
-tabla_flex <- flextable(comparativa)
+Como se puede ver en la tabla, que muestra el cambio relativo en las métricas de rendimiento de los modelos completos y reducidos, la reducción de variables no afecta significativamente el rendimiento de los modelos. En general, los cambios en el área bajo la curva ROC (AUC-ROC), la sensibilidad y la especificidad son mínimos, lo que sugiere que las variables eliminadas no tenían un impacto significativo en la capacidad predictiva de los modelos. Esto indica que el dataset reducido sigue siendo capaz de capturar los patrones relevantes en los datos y de realizar predicciones precisas sobre el diagnóstico de cáncer de mama.
 
-# Imprimir la tabla en un entorno que soporte flextable (por ejemplo, RStudio)
-tabla_flex
+Como los modelos no mejoran ni empeoran significativamente con la reducción de variables, se puede concluir que el dataset original contiene información redundante o poco relevante para la predicción del diagnóstico. Además, ahora es un proceso más eficiente y menos costoso computacionalmente, ya que se trabaja con un número menor de variables.
 
-```
-
--   CART:
-
-La sensibilidad mejora con el dataset reducido, lo que indica una mejor capacidad para detectar casos positivos. Esto puede deberse a que las variables menos relevantes generaban divisiones innecesarias en el árbol.
-
--   Random Forest:
-
-Aunque hay una leve disminución en ROC y sensibilidad, la especificidad mejora. Esto implica que el modelo con el dataset reducido identifica mejor los casos negativos.
-
--   SVM:
-
-El impacto del dataset reducido es mínimo, pero muestra una ligera disminución en todas las métricas. Esto sugiere que las variables eliminadas tenían una influencia menor, pero no eran completamente irrelevantes.
-
--   GLM:
-
-El modelo con dataset reducido muestra mejoras claras en todas las métricas, lo que refuerza la idea de que las variables eliminadas no eran útiles para este enfoque lineal.
-
-En resumen: La eliminación de variables menos importantes mantiene un rendimiento comparable, e incluso mejora algunas métricas específicas en ciertos modelos.
-
-Esto sugiere que las variables eliminadas no aportaban información relevante o incluso podían introducir ruido.
-
-Reducir el número de variables tiene ventajas prácticas, como menores requerimientos computacionales y mayor interpretabilidad, sin comprometer el rendimiento.
-
-### 4. Análisis No Supervisado.
+### 3.4. Análisis No Supervisado.
 
 El análisis no supervisado tiene como objetivo descubrir patrones ocultos o estructuras en los datos sin la necesidad de etiquetas. En este caso, aplicaremos técnicas de clustering y reducción de dimensionalidad para explorar la información contenida en las características de las células. Estas técnicas nos ayudarán a identificar grupos de observaciones similares y a obtener una visión más clara de las relaciones entre las variables.
 
-#### 4.1 Preparación del Dataset
+#### 3.4.1. Preparación del Dataset
 
 Antes de aplicar cualquier técnica de análisis no supervisado, es necesario realizar un preprocesamiento adecuado de los datos. El primer paso es eliminar la columna "diagnosis", ya que esta variable contiene la etiqueta que queremos predecir y no se utiliza en el análisis no supervisado. A continuación, normalizamos las características, ya que muchas técnicas, como el clustering, son sensibles a las escalas de las variables. Esto asegura que todas las variables tengan la misma influencia en el modelo.
 
@@ -899,7 +880,7 @@ data_normalized <- predict(preprocess_params, data_UnSupervised[, -ncol(data_UnS
 
 ```
 
-#### 4.2 Clustering: Determinación del Número Óptimo de Clusters
+#### 3.4.2. Clustering: Determinación del Número Óptimo de Clusters
 
 El primer paso en cualquier técnica de clustering es determinar el número adecuado de grupos (clusters). Utilizamos dos métodos comunes para esto:
 
@@ -925,7 +906,7 @@ plot(2:15, silhouette_scores[-1], type = "b", xlab = "Número de Clusters", ylab
 
 ```
 
-#### 4.3 K-Means
+#### 3.4.3. K-Means
 
 Una vez determinado el número óptimo de clusters, implementamos el algoritmo de K-means. Este es un algoritmo de clustering que agrupa los datos en K clusters, minimizando la varianza dentro de cada grupo. Es importante mencionar que, aunque este es un algoritmo ampliamente utilizado, la interpretación de los resultados debe hacerse con cautela, ya que el número de clusters es un valor sensible a la inicialización y la distribución de los datos.
 
@@ -950,7 +931,7 @@ aggregate(data[, -ncol(data)], by = list(cluster = data$cluster), FUN = mean)
 
 ```
 
-#### 4.4 PCA
+#### 3.4.4. PCA
 
 El próximo paso de nuestro análisis no supervisado será utilizar el Análisis de Componentes Principales para visualizar la estructura de los datos y validar los resultados del clustering.
 
@@ -977,7 +958,7 @@ Hay un grado menor de solapamiento entre los clústeres, lo que sugiere que las 
 
 Vamos también a repetir el clustering con el dataset reducido generado durante el estudio de la importancia de las variables:
 
-#### 4.5 Análisis No Supervisado con Dataset Reducido según importancia de variables
+#### 3.4.5. Análisis No Supervisado con Dataset Reducido según importancia de variables
 
 ```{r}
 data_UnSupervised_reduced <- data_reduced %>% select(-diagnosis)
@@ -1050,17 +1031,17 @@ Con reducción, los clústeres muestran mayor solapamiento y parecen menos defin
 
 La aparición de un quinto clúster en el conjunto reducido indica que la reducción puede introducir sensibilidad al ruido o revelar patrones más complejos (aunque menos significativos).
 
-### 5.Reglas de asociación con algoritmo Apriori.
+#### 3.4.6. Reglas de asociación con algoritmo Apriori.
 
 Las reglas de asociación son usadas en Data Mining para identificar relaciones entre elementos de un conjunto de datos. Estas relaciones, a su vez, nos ayudan a encontrar patrones de datos.
 
 Estan formadas por un antecedente {a} y un consecuente {b}, de manera que {a} implica -\> {b} También es conveniente conocer los términos de: - Soporte: Proporción de transacciones que contienen ambos conjuntos de ítems (antecedente y consecuente) - Confianza: Aciertos o cómo de bien predice el antecedente al consecuente.
 
-### 5.1 Algoritmo Apriori
+*Algoritmo Apriori*
 
 Haremos uso del Algoritmo Apriori para obtener las reglas de asociación ya que es útil para encontrar itemsets frecuentes en datos transaccionales (datos tipo eventos en un intervalo de tiempo determinado)
 
-#### 5.1.1 Fase 1: Reducción del número de candidatos
+##### Fase 1: Reducción del número de candidatos
 
 Generar todos los itemsets con 1 único ítem. Posteriormente, se combinarán estos itemstes formando itemsets con 2 elementos y así sucesivamente. Nos quedaremos con los pares cuyo soporte sea mayor o igual a un minsup (eliminando aquellos que no cumplen con el umbral de soporte)
 
@@ -1078,7 +1059,7 @@ transacciones <- read.transactions("data_reduced.csv", format = "basket", sep = 
 
 ```
 
-#### 5.1.2 Fase 2: Generar reglas Parámetros: soporte mínimo (0.01 -\> 1%) y confianza mínima (80%)
+##### Fase 2: Generar reglas Parámetros: soporte mínimo (0.01 -\> 1%) y confianza mínima (80%)
 
 ```{r}
 reglasAsociacion <- apriori(transacciones, parameter = list(supp = 0.01, conf = 0.8))
@@ -1092,11 +1073,14 @@ filtradas <- subset(reglasAsociacion, lift > 1.5 & confidence >= 0.8)
 inspect(filtradas)
 ```
 
-### 6. Conclusiones
+### 4. Conclusiones
 Hemos realizado un análisis completo de un conjunto de datos de cáncer de mama, incluyendo la exploración de datos, la construcción de modelos de aprendizaje supervisado y no supervisado, y la identificación de reglas de asociación. Algunos de los hallazgos clave incluyen:
 Detección de patrones de agrupación en los datos de cáncer de mama mediante técnicas de clustering y reducción de dimensionalidad. En los que 2 de los 4 clústeres identificados en el análisis no supervisado son 100% malignos, por lo que podrían ser de especial interés para futuros estudios.
 Identificación de reglas de asociación significativas entre las variables del conjunto de datos, lo que proporciona información valiosa sobre las relaciones entre las características de las células y el diagnóstico de cáncer de mama.
 Respecto al aprendizaje supervisado, hemos evaluado varios modelos, incluyendo Árboles de Decisión, Random Forest, SVM, Regresión Logística y Redes Neuronales. Los modelos Random Forest y SVM mostraron un rendimiento excepcional, con altas puntuaciones de AUC y sensibilidad. La reducción de variables menos importantes no afectó significativamente el rendimiento de los modelos, lo que sugiere que las variables eliminadas no aportaban información relevante pero tampoco introducían ruido probablemente debido a la alta correlación entre las variables.
 En general, este análisis proporciona información valiosa para la detección y el diagnóstico del cáncer de mama, y destaca la importancia de utilizar una variedad de técnicas de análisis de datos para obtener una comprensión completa de los patrones y relaciones en los datos.
 
-### 7. Referencias
+### 5. Referencias
+
+-   [UCI Machine Learning Repository: Breast Cancer Wisconsin (Diagnostic) Data Set](https://archive.ics.uci.edu/ml/datasets/Breast+Cancer+Wisconsin+(Diagnostic))
+-  Asignatura de Fundamentos de ingeniería de datos de la Universidad de Sevilla.
